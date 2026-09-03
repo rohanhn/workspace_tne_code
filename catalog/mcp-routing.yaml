@@ -1,0 +1,16 @@
+preferred:
+  runtime: platform-system
+  # GitLab: DÙNG server workspace, KHÔNG dùng user-gitlab-tne (token cũ → 403 giả)
+  gitlab: project-0-workspace_tne_code-gitlab-tne-ws
+gitlab_ready_when: "health_check authenticated=true"
+gitlab_readonly: true
+
+disabled:
+  # Server user-level (~/.cursor/mcp.json) — PAT cũ thiếu scope, gây 403 giả.
+  # Nhắc user TẮT trong Settings → MCP để agent không gọi nhầm.
+  - user-gitlab-tne
+
+notes: |
+  Server workspace đã authenticated đầy đủ scope (Namespace: Read + Project: Read):
+  list_namespaces / list_projects / get_project / list_group_projects /
+  get_repository_tree / get_file_contents đều OK.

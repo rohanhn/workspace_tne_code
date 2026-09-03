@@ -1,0 +1,16 @@
+---
+description: Bắt buộc gắn ENV DEV/STAG/PROD trước mọi thao tác ops. Không đoán môi trường. Cấm hành động PROD trừ khi user confirm.
+alwaysApply: true
+---
+
+# Environment guard
+
+Mọi câu trả lời liên quan deploy, log, hotfix, restart, MR môi trường phải **dòng đầu**:
+
+`ENV: DEV | STAG | PROD | UNKNOWN` — kèm namespace K8s, platform project, ArgoCD app nếu biết.
+
+- User không nói môi trường → `UNKNOWN`, hỏi lại, không mặc định PROD.
+- Map: `dev` / `*-dev` / local = **DEV**. `staging` / `stag` / `uat` / `*-staging` = **STAG**. `prod` / `production` / `*-prod` = **PROD**.
+- Nguồn sự thật: `catalog/environments.yaml`.
+- PROD: chỉ đọc. Cấm restart, sync, merge, push GitOps, đổi image tag.
+- Cảnh báo: app có thể namespace `*-dev` nhưng image tag `staging-*` (đã thấy ở hoc-thi-2).

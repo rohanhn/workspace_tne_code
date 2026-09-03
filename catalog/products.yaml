@@ -1,0 +1,58 @@
+# Index of products. Details in catalog/products/<slug>.yaml
+# 6 nhóm: 5 sản phẩm hệ thống chính + BCN Inhouse (nhánh phát triển riêng của team).
+
+products:
+  - slug: v2-thi
+    name: V2 / Thi (TNE) — Trạng Nguyên Tiếng Việt (tnv)
+    file: products/v2-thi.yaml
+    architecture: micro-service
+    verified: true
+  - slug: v5-hoc
+    name: V5 / Học (TNE) — trang chủ trangnguyen.edu.vn (tne5)
+    file: products/v5-hoc.yaml
+    architecture: monolith
+    verified: true
+  - slug: v6-tnmath
+    name: V6 / TNMath (tnmath)
+    file: products/v6-tnmath.yaml
+    architecture: micro-service
+    verified: true
+  - slug: lachcach
+    name: LachCach / DanhMay (typing-game)
+    file: products/lachcach.yaml
+    architecture: unknown
+    verified: true
+  - slug: kc-identity
+    name: KC / Identity (Keycloak)
+    file: products/kc-identity.yaml
+    architecture: shared-identity
+    verified: true
+  - slug: bcn-inhouses
+    name: BCN Inhouse (in-house — CRM, CRM2, Noibo, Chatbot)
+    file: products/bcn-inhouses.yaml
+    architecture: mixed
+    verified: true
+    in_house: true
+
+# Quy ước tên (nguồn: devops/tnv/tnv-troubleshoot-helper/CLAUDE.md)
+naming:
+  tnv: v2      # Trạng Nguyên Tiếng Việt — outsource, BCN maintain
+  tne5: v5     # trang chủ trangnguyen.edu.vn (HUB) — outsource
+  tnmath: v6   # outsource
+  bcn: inhouse # BCN tự phát triển
+  lachcach: lachcach  # outsource
+
+# Quan hệ hệ thống:
+# - v5 (tne5) là HUB trang chủ trangnguyen.edu.vn → điều hướng sang v6 (tnmath) và v2 (tnv).
+# - IAM trung tâm = tne5 (v5-identity, host iam.dev-v3, realm tnv-main); v6 + phần lớn v2/v5 auth vào đây.
+# - KC v2 (cũ) = tnv/keycloak (host iam-dev, realm tnv) cho một số app cms/quantri; đang migrate user sang IAM tne5.
+# - v5 = master data (trường/huyện/tỉnh) cấp REST cho các V khác.
+
+shared:
+  gitlab_host: https://git.trangnguyen.edu.vn
+  registry: git-registry.trangnguyen.edu.vn
+  frontend_group: tne5/frontend
+  # Image path = group/repo GitLab (CI $CI_PROJECT_PATH) → nhìn image suy ra repo nguồn.
+  ops_docs_repo: devops/tnv/tnv-troubleshoot-helper  # bản đồ vận hành sống (branch main)
+  # Clone sản phẩm (không nest trong orchestration). Orchestration: C:\TungVu\Workspace\workspace_tne_code
+  clone_root: "C:\\TungVu\\OnlineStorage\\OneDrive - Cong ty TNHH Dau tu Giao duc Trang Nguyen\\source_code"

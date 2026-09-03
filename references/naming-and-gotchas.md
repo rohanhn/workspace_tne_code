@@ -1,0 +1,57 @@
+# Naming & gotchas
+
+Trích từ `devops/tnv/tnv-troubleshoot-helper` (CLAUDE.md + systems/*). Đọc trước khi trace/QA/review đa repo.
+
+## Quy ước tên group ↔ sản phẩm
+
+| Group | Sản phẩm | Nguồn | Ghi chú |
+|---|---|---|---|
+| `tnv` | v2 — Trạng Nguyên Tiếng Việt | outsource → BCN maintain | micro-service |
+| `tne5` | v5 — trang chủ `trangnguyen.edu.vn` (HUB) | outsource | monolith BE + FE tách |
+| `tnmath` | v6 | outsource (mirror tinhvan) | micro-service |
+| `bcn` / `bancn` | in-house (CRM, CRM2, Noibo, Chatbot) | BCN tự phát triển | |
+| `typing-game` | lachcach | outsource | `app_danh_may` = group rỗng |
+
+> Outsource = đối tác viết → **BCN maintain sau bàn giao**.
+
+## Image path = repo GitLab
+CI dùng `$CI_PROJECT_PATH` → **image registry path = group/repo nguồn**. Nhìn image trong ArgoCD suy ra repo.
+
+## Bảng mapping tên lệch (app ArgoCD ≠ repo GitLab)
+
+| App / image | Repo GitLab thật | Hệ |
+|---|---|---|
+| `api-cms-service` | `tnv/cms-trang-nguyen-api` | v2 |
+| `bcn-cms` | `bancn/cms-admin` (**KHÁC** `tnv/cms-admin`!) | bcn |
+| `hoc-thi-2` | `tne5/frontend/exam-page` | v2 (FE) |
+| `kafka-connect` | `tnv/kafka-connect-cdc` | v2 |
+| `consumer-service` | `tnv/api-payment` (image typo `comsumers`) | v2 (legacy payment) |
+| `learning-service` | `tnmath/.../cms-service` | v6 |
+| `scorecard-service` | `tnmath/.../scorecard-recommendation` | v6 |
+| `math-collab` | `tnmath/.../frontend-collab` | v6 |
+| `api` & `cdc` | chung image `tne5/backend/v5` | v5 |
+
+Monorepo: `tnv/tnv2-learn-exam-v2` build nhiều image (`tnv-exam-api`, `tnv-learn-api`, `tnv-student-api`, `tnv-consumer`, `tnv-consumer-sync-data`, `tnv-schedule`). Xem `catalog/products/v2-thi.yaml`.
+
+## Gotcha 1 — IAM có 2 Keycloak (phân biệt theo HOST)
+- **KC trung tâm = tne5** `v5-identity`: host `iam.dev-v3.trangnguyen.edu.vn` (dev) / `id.trangnguyen.edu.vn` (v6 prod), realm `tnv-main`/`tne-main`.
+- **KC v2 (cũ) = tnv** `keycloak` (app `keycloak-cluster`, image tag `prod` ngay ở dev): host `iam-dev`, realm `tnv`, DB `keycloak_dev2`@192.168.60.25:9999.
+- **Đừng nhầm `iam-dev` (tnv) với deployment `iam-dev` của tne5 (host `iam.dev-v3`)** — luôn phân biệt theo HOST.
+
+## Gotcha 2 — app→app đi qua HAProxy public
+- Ở tnv/bcn, service **KHÔNG gọi Service k8s nội bộ**: đi vòng qua domain public → HAProxy `192.168.60.6` → quay lại cụm (`hostAliases` pin IP LB).
+- Ngoại lệ: `media-server` dùng Service `redis` nội bộ.
+- **Hệ quả:** domain không có trong HAProxy map bị **silent-drop** ("treo không response"). Trace timeout app→app → check HAProxy map trước.
+
+## Gotcha 3 — ENV không suy từ tên; tag thật ở `.argocd-source-*`
+- Tag đang chạy = `.../.argocd-source-<app>-<env>.yaml`, **KHÔNG** phải tag pin trong `values.yaml`.
+- Cùng nhánh dev có image tag lệch tên ENV: `hoc-thi-2` tag `staging` (host `thi-stag-v3`); `keycloak-cluster` tag `prod`.
+- => KHÔNG suy ENV từ namespace/branch; đọc image tag thực trước khi kết luận.
+
+## Gotcha 4 — PROD chạy repo manifest CŨ
+- **v2 PROD**: `tnv/devops/tnv-argocd-manifest` nhánh `tnv/prod` (KHÔNG phải `tnv-argocd-config`, chỉ dev/staging).
+- **bcn PROD**: `devops/bcn-argocd-manifest` nhánh `bcn/prod`.
+- `tnv/dev`,`tnv/staging` của manifest cũ = **đã chết** (chỉ tra env cũ; ConfigMap có secret plaintext — chỉ đọc).
+
+## Gotcha 5 — Noibo = support_tnv2, chạy chung env tnv
+- `support-tnv2-cms` (host `noibo-stage`), `support-tnv2-api` (host `noibo-api`), source group `bancn`, deploy trong namespace/infra V2.

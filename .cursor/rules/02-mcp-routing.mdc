@@ -1,0 +1,13 @@
+---
+description: Ưu tiên Platform MCP; GitLab MCP dùng server workspace gitlab-tne-ws. Không log PAT.
+alwaysApply: true
+---
+
+# MCP routing
+
+1. Ops runtime (pods, sync, Helm values, logs, metrics): **platform-system**.
+2. GitLab source (list group, file, MR diff, pipeline): **server workspace `project-0-workspace_tne_code-gitlab-tne-ws`** (PAT đủ scope, đã `health_check` authenticated). Đây là server GitLab DUY NHẤT được dùng.
+3. **KHÔNG dùng `user-gitlab-tne`** (server user-level `~/.cursor/mcp.json`, token cũ → 403 giả). Nếu thấy cả hai server GitLab, luôn chọn `...-gitlab-tne-ws`; nhắc user tắt server user-level trong Settings → MCP.
+4. Nếu GitLab MCP workspace 403/unauthenticated: nói rõ, dùng Platform `gitlab_get_repo_detail` theo id đã có trong catalog; không đoán id.
+5. Pod logs: `request_log_access` → đưa URL cho user → mới `argocd_query_app_logs`.
+6. Không in PAT, Bearer, hay nội dung `.cursor/mcp.json` ra chat.

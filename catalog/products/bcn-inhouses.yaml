@@ -1,0 +1,72 @@
+slug: bcn-inhouses
+name: BCN Inhouse
+aliases: [bcn, bancn, inhouse, noibo]
+verified: true
+architecture: mixed
+origin: in-house   # BCN tự phát triển (khác outsource)
+note: "Nhánh phát triển sản phẩm riêng của team. Groups: bancn + erp."
+
+products:
+  CRM:
+    repos:
+      - { repo: bancn/crm/crm-be, id: 80, branch: main }
+      - { repo: bancn/crm/crm-fe, id: 79, branch: main }
+      - { repo: bancn/crm/ba, id: 81 }
+    legacy:
+      - { repo: bancn/crm-be, id: 72 }
+      - { repo: bancn/crm-fe, id: 73 }
+    stack: "Laravel + MySQL/Redis .60.33"
+  CRM2:
+    repos:
+      - { repo: erp/crm-v2, id: 165, branch: develop, note: "shared với group BanCN; FastAPI + SPA" }
+  Chatbot:
+    repos:
+      - { repo: bancn/tne-chatbot, id: 122, branch: main }
+    stack: "tne-chat, backend n8n"
+  Noibo:
+    note: "= support_tnv2. Deploy CHUNG env tnv (namespace/infra V2)."
+    repos:
+      - { repo: bancn/support_tnv2, id: 44, branch: main }
+      - { repo: bancn/support_tnv2_api, id: 45, branch: staging, host: noibo-api-dev.trangnguyen.edu.vn }
+      - { repo: bancn/support_tnv2_cms, id: 46, branch: master, host: noibo-stage }
+      - { repo: bancn/khaosat-fe, id: 49, branch: master, host: khaosat-dev }
+      - { repo: bancn/tnv2-api, id: 119, branch: main }
+    argocd_apps: [support-tnv2-api, support-tnv2-api-celery, khaosat-fe]
+
+name_mismatch:
+  bcn-cms: bancn/cms-admin   # KHÁC tnv/cms-admin!
+
+gitlab:
+  gitops:
+    dev:
+      - { id: 74, path: devops/bcn-argocd-manifest }
+      - { id: 164, path: devops/tnv/bcn-argocd-config }
+    prod:
+      path: devops/bcn-argocd-manifest
+      branch: bcn/prod
+      note: "PROD chạy repo cũ; mỗi app 1 ns bcn-<app>-prod, cluster 10.0.0.20:6443"
+
+iam:
+  note: "Một số app auth KC v2 (tnv/keycloak); phần khác dùng IAM tne5."
+
+platform:
+  DEV:
+    project_id: 2
+    name: bcn
+    namespace: bcn-dev
+    argocd_project: bcn-dev
+    note: "chung cụm cluster-dev-tnv"
+  STAG: null
+  PROD: null   # chạy trên bcn-argocd-manifest nhánh bcn/prod
+
+infra:
+  vault_kv: bcn
+
+ops_docs:
+  repo: devops/tnv/tnv-troubleshoot-helper
+  overview: systems/bcn/OVERVIEW.md
+
+apps_sample:
+  - bcn-dev-crm2
+
+local_clone_placeholder: C:\TungVu\OnlineStorage\OneDrive - Cong ty TNHH Dau tu Giao duc Trang Nguyen\source_code\crm-v2

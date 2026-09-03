@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "gitlab-tne": {
+      "command": "npx",
+      "args": ["-y", "@zereight/mcp-gitlab"],
+      "env": {
+        "GITLAB_PERSONAL_ACCESS_TOKEN": "PASTE_GITLAB_PAT_HERE",
+        "GITLAB_API_URL": "https://git.trangnguyen.edu.vn/api/v4",
+        "GITLAB_READ_ONLY_MODE": "true"
+      }
+    }
+  }
+}

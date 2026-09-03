@@ -1,0 +1,10 @@
+# Secrets — never commit PAT or local MCP config
+.cursor/mcp.json
+.env
+.env.local
+*.pem
+
+# OS / editor
+Thumbs.db
+Desktop.ini
+.DS_Store

@@ -1,0 +1,21 @@
+# Canonical environment names. Agent must emit ENV: on every ops reply.
+
+environments:
+  DEV:
+    aliases: [dev, local, development]
+    platform_env_label: dev
+    k8s_namespace_suffix: "-dev"
+  STAG:
+    aliases: [stag, staging, uat]
+    platform_env_label: uat
+    k8s_namespace_suffix: "-staging"
+    note: "Platform MCP currently labels staging as uat."
+  PROD:
+    aliases: [prod, production]
+    platform_env_label: null
+    k8s_namespace_suffix: "-prod"
+    status: stub
+    note: "PROD not onboarded on Platform. Do not guess namespace or app names."
+
+mismatch_warnings:
+  - "tnv-dev-hoc-thi-2 lives in namespace tnv-dev but image tag may be staging-*"

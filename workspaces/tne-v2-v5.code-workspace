@@ -1,0 +1,19 @@
+{
+  "folders": [
+    {
+      "name": "orchestration",
+      "path": "C:/TungVu/Workspace/workspace_tne_code"
+    },
+    {
+      "name": "fe-exam-page (V2 · thi.trangnguyen.edu.vn)",
+      "path": "C:/TungVu/OnlineStorage/OneDrive - Cong ty TNHH Dau tu Giao duc Trang Nguyen/source_code/tne5-frontend-exam-page"
+    },
+    {
+      "name": "fe-v5 (V5 · trangnguyen.edu.vn)",
+      "path": "C:/TungVu/OnlineStorage/OneDrive - Cong ty TNHH Dau tu Giao duc Trang Nguyen/source_code/tne5-frontend-v5"
+    }
+  ],
+  "settings": {
+    "//": "Clone (clone_root + tên có group để tránh trùng 'v5'): git clone https://git.trangnguyen.edu.vn/tne5/frontend/exam-page.git \"C:/TungVu/OnlineStorage/OneDrive - Cong ty TNHH Dau tu Giao duc Trang Nguyen/source_code/tne5-frontend-exam-page\" ; git clone https://git.trangnguyen.edu.vn/tne5/frontend/v5.git \"C:/TungVu/OnlineStorage/OneDrive - Cong ty TNHH Dau tu Giao duc Trang Nguyen/source_code/tne5-frontend-v5\""
+  }
+}

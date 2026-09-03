@@ -1,0 +1,40 @@
+slug: lachcach
+name: LachCach / DanhMay
+aliases: [typing-game, lachcach, danh-may]
+verified: true          # user xác nhận LachCach = group typing-game
+architecture: unknown   # OVERVIEW troubleshoot-helper còn TODO
+origin: outsource
+
+gitlab:
+  source_group: typing-game   # id 147
+  source_repos:
+    - { repo: typing-game/game-client, id: 66, branch: main }
+    - { repo: typing-game/gameserver, id: 65, branch: main }
+    - { repo: typing-game/cms, id: 67, branch: main }
+  gitops:
+    - { id: 68, path: devops/lachcach-argocd-manifest, branch: lachcach/staging }
+    - { id: 167, path: devops/tnv/lachcach-argocd-config }
+  note: "Group app_danh_may (125) tồn tại nhưng 0 project — source thực ở typing-game."
+
+platform:
+  DEV: null
+  STAG:
+    project_id: 9
+    name: lachcach-staging
+    namespace: lachcach-staging
+    argocd_project: lachcach-staging
+  PROD: null
+
+infra:
+  note: "Deploy lachcach-staging chung cụm tnv (cluster-dev-tnv)."
+
+ops_docs:
+  repo: devops/tnv/tnv-troubleshoot-helper
+  overview: systems/lachcach/OVERVIEW.md   # còn TODO — chưa tài liệu hóa đầy đủ
+
+apps_sample:
+  - lachcach-staging-cms
+  - lachcach-staging-game-client
+  - lachcach-staging-game-server
+
+local_clone_placeholder: C:\TungVu\OnlineStorage\OneDrive - Cong ty TNHH Dau tu Giao duc Trang Nguyen\source_code\lachcach

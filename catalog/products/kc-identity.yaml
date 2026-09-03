@@ -1,0 +1,45 @@
+slug: kc-identity
+name: KC / Identity (Keycloak)
+aliases: [keycloak, iam, identity]
+verified: true
+architecture: shared-identity
+
+# CÓ 2 KEYCLOAK — luôn phân biệt theo HOST, không nhầm.
+keycloaks:
+  central:
+    role: "IAM trung tâm — auth chung cho V6 + phần lớn V2/V5"
+    image: tne5/frontend/v5-identity   # id 128, branch master
+    app: iam                            # thuộc hệ tne5 (v5)
+    host_dev: iam.dev-v3.trangnguyen.edu.vn
+    host_prod: id.trangnguyen.edu.vn
+    realm: [tnv-main, tne-main]
+    migration: "đang migrate user tnv sang đây (lazy migration keycloak-rest-provider; listener AdminUserCreationInterceptor gọi webhook khi tạo user)"
+  legacy_v2:
+    role: "KC v2 (cũ) — một số app cms/quantri của tnv"
+    image: tnv/keycloak                 # id 53, branch master
+    app: keycloak                        # app keycloak-cluster trong tnv-argocd-manifest, tag prod
+    host: iam-dev
+    realm: tnv
+    db: keycloak_dev2@192.168.60.25:9999
+    note: "ĐỪNG nhầm iam-dev (tnv) với deployment iam-dev của tne5 (host iam.dev-v3)."
+
+user_sync:
+  services: [cdc, sync]     # nằm trong V5 (tne5)
+  note: "Đồng bộ user V2 ↔ V5 ↔ KC. Trace lỗi login/user lệch → kiểm cdc/sync trước."
+
+gitlab:
+  source_repos:
+    - { repo: tnv/keycloak, id: 53, branch: master, role: "KC v2 legacy" }
+    - { repo: tne5/frontend/v5-identity, id: 128, branch: master, role: "IAM trung tâm FE" }
+  gitops: null   # deploy kèm hệ tnv (keycloak-cluster) và tne5 (iam)
+
+platform:
+  DEV: null   # chưa có app riêng trên Platform; xử lý như identity dùng chung
+  STAG: null
+  PROD: null
+
+ops_docs:
+  repo: devops/tnv/tnv-troubleshoot-helper
+  overview: systems/tnv/services   # IAM mô tả trong systems của tnv/tne5
+
+local_clone_placeholder: C:\TungVu\OnlineStorage\OneDrive - Cong ty TNHH Dau tu Giao duc Trang Nguyen\source_code\kc-identity

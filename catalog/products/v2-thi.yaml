@@ -1,0 +1,105 @@
+slug: v2-thi
+name: V2 / Thi (TNE) — Trạng Nguyên Tiếng Việt
+aliases: [tnv, v2]
+verified: true
+architecture: micro-service
+origin: outsource   # đối tác viết → BCN maintain sau bàn giao
+
+# FE Thi dùng chung group tne5/frontend nhưng KHÔNG chung codebase với V5:
+# 2 repo/2 domain, chỉ giống layout; v5 là hub điều hướng sang v2.
+frontend:
+  image: tne5/frontend/exam-page   # app hoc-thi-2 (FE mới), tag staging tại dev
+  legacy_app: hoc-thi              # FE cũ
+  domain_prod: thi.trangnguyen.edu.vn
+  domain_dev: [thi-stag-v3.trangnguyen.edu.vn, me-dev]
+
+stack:
+  primary_db: MongoDB
+  messaging_high_load: Kafka        # thi online tải lớn ~500.000 CCU
+  background_tasks: RabbitMQ
+  object_storage: MinIO
+  session_store: Redis              # V2 quản lý session trong Redis
+  note: "Nghẽn thi online thường ở Kafka/consumer (throughput), không phải API stateless."
+
+gitlab:
+  source_group: tnv
+  # tnv2-learn-exam-v2 là MONOREPO → build nhiều image (1 repo, nhiều workload)
+  monorepo:
+    repo: tnv/tnv2-learn-exam-v2   # id 52, develop
+    services:
+      - { app: tnv2-learn-exam-api-v2, image: tnv/tnv2-learn-exam-v2/tnv-exam-api, service_env: exam-api, host: api-me-dev/exam }
+      - { app: tnv2-learn-api-v2, image: tnv/tnv2-learn-exam-v2/tnv-learn-api, service_env: learn-api, host: api-me-dev/learning }
+      - { app: tnv2-student-api-v2, image: tnv/tnv2-learn-exam-v2/tnv-student-api, service_env: student-api, host: api-me-dev/student }
+      - { app: tnv2-learn-exam-consumer-v2, image: tnv/tnv2-learn-exam-v2/tnv-consumer, service_env: consumer }
+      - { app: tnv2-learn-exam-consumer-sync-data-v2, image: tnv/tnv2-learn-exam-v2/tnv-consumer-sync-data, service_env: consumer-sync-data }  # SYNC user
+      - { app: tnv2-learn-exam-schedule-v2, image: tnv/tnv2-learn-exam-v2/tnv-schedule }
+  standalone_services:
+    - { app: tnv-service, repo: tnv/tnv-service, host: api-dev }
+    - { app: api-cms-service, repo: tnv/cms-trang-nguyen-api, host: dev-api-cms2 }   # tên lệch!
+    - { app: cms-admin, repo: tnv/cms-admin, kind: FE, host: dev-cms2 }
+    - { app: quantri-trang-nguyen-api, repo: tnv/quantri-trang-nguyen-api, host: api-dev-quantri }
+    - { app: quantri-cms-admin, repo: tnv/quantri-cms-admin, kind: FE, host: dev-quantri }
+    - { app: media-server, repo: tnv/media-server, note: "dùng Service redis nội bộ (ngoại lệ)" }
+    - { app: consumer-service, repo: tnv/api-payment, image: tnv/api-payment/comsumers, note: "legacy payment consumer, typo comsumers" }
+    - { app: kafka-connect, repo: tnv/kafka-connect-cdc }   # tên lệch!
+    - { app: keycloak-cluster, repo: tnv/keycloak, note: "image tag prod ngay ở dev — xem KC v2" }
+  gitops:
+    dev_staging:
+      id: 159
+      path: devops/tnv/tnv-argocd-config
+      branches: [dev, staging]
+      note: "Gateway API + Vault ExternalSecret; cụm cluster-dev-tnv"
+    prod:
+      path: tnv/devops/tnv-argocd-manifest
+      branch: tnv/prod
+      note: "PROD chạy repo CŨ (44 app). Tag thật = tnv-services/<app>/.argocd-source-<app>-prod.yaml. KHÔNG dùng tnv-argocd-config cho prod."
+    legacy_manifest:
+      path: tnv/devops/tnv-argocd-manifest
+      dead_branches: [tnv/dev, tnv/staging]
+      note: "Chỉ tra env cũ (ConfigMap chứa secret plaintext — chỉ đọc)."
+
+# Tag đang chạy thật = file .argocd-source-*.yaml, KHÔNG phải tag pin trong values.yaml.
+runtime_note: >
+  app→app KHÔNG gọi Service nội bộ k8s: đi vòng qua domain public → HAProxy 192.168.60.6
+  → quay lại cụm (hostAliases). Domain không có trong HAProxy map bị silent-drop.
+
+platform:
+  DEV:
+    project_id: 4
+    name: tnv-dev
+    namespace: tnv-dev
+    argocd_project: tnv-dev
+  STAG:
+    project_id: 5
+    name: tnv-staging
+    namespace: tnv-staging
+    argocd_project: tnv-staging
+  PROD: null   # chưa onboard Platform; chạy trên tnv-argocd-manifest nhánh tnv/prod
+
+infra:
+  cluster_dev: "cluster-dev-tnv (RKE2) master 192.168.60.141, worker .144-146"
+  gateway: "rke2-traefik Gateway API :8012 sau HAProxy 192.168.60.6"
+  datastores: "Mongo .60.21-24 · Redis .60.21-23 · Kafka .60.31/32/44 · RabbitMQ .60.26 · PG .60.25:9999 · ES 10.0.0.207 · ClickHouse 10.0.0.58 · MinIO"
+  sentry: "sentry.trangnguyen.edu.vn — tnv-service=proj4, tnv2-learn-exam=3, tnv2-learn-exam-v2=13"
+
+iam:
+  central: "IAM tne5 (v5-identity), host iam.dev-v3, realm tnv-main — phần lớn v2 auth vào đây"
+  kc_v2_old: "tnv/keycloak, host iam-dev, realm tnv, DB keycloak_dev2@192.168.60.25:9999 — cms/quantri; đang migrate sang IAM tne5"
+
+# Đồng bộ user V2 ↔ V5 ↔ KC qua 2 service cdc/sync nằm trong V5.
+
+ops_docs:
+  repo: devops/tnv/tnv-troubleshoot-helper
+  overview: systems/tnv/OVERVIEW.md
+  notes: notes/tnv.md
+
+apps_sample:
+  - tnv-dev-hoc-thi-2
+  - tnv-dev-tnv2-learn-exam-api-v2
+  - tnv-staging-hoc-thi-2
+
+# Clone folders (shared.clone_root + <group>-<repo>; git clone default có thể trùng tên → dùng tên có group)
+local_clone_placeholder: C:\TungVu\OnlineStorage\OneDrive - Cong ty TNHH Dau tu Giao duc Trang Nguyen\source_code\tnv2-learn-exam-v2   # BE monorepo (dev-feature BE)
+fe_clone_placeholder: C:\TungVu\OnlineStorage\OneDrive - Cong ty TNHH Dau tu Giao duc Trang Nguyen\source_code\tne5-frontend-exam-page  # FE Thi (parity workspace tne-v2-v5)
+planka:
+  project_name: Trạng Nguyên V2

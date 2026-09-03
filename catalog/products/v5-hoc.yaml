@@ -1,0 +1,77 @@
+slug: v5-hoc
+name: V5 / Học (TNE) — trang chủ trangnguyen.edu.vn
+aliases: [tne5, v5]
+verified: true
+architecture: monolith   # BE gộp; FE tách theo mặt tiền
+origin: outsource        # đối tác viết → BCN maintain sau bàn giao
+role: hub                # trang chủ trangnguyen.edu.vn → điều hướng sang v6 và v2
+
+# 7 thành phần ArgoCD (verify từ tne5-argocd-manifest + troubleshoot-helper)
+gitlab:
+  source_group: tne5
+  components:
+    - { app: api, kind: BE, repo: tne5/backend/v5, stack: "Node.js :8000 monolith", host: "api.stag-v3 / api.dev-v3", note: "giữ master data trường/huyện/tỉnh, cấp REST cho V khác" }
+    - { app: web, kind: FE, repo: tne5/frontend/v5, desc: "Web tin tức (user)", host: stag-v3 }
+    - { app: admin, kind: FE, repo: tne5/frontend/admin-v5, desc: "CMS tin tức (admin)", host: admin.dev-v3 }
+    - { app: iam, kind: FE, repo: tne5/frontend/v5-identity, desc: "Keycloak IAM trung tâm", host: iam.dev-v3, realm: tnv-main }
+    - { app: cdc, kind: worker, repo: tne5/backend/v5, note: "chung image với api; đồng bộ user (CDC)" }
+    - { app: pipe, kind: worker, image: "timberio/vector (public)", note: "Vector: Kafka → ClickHouse (learning log)" }
+    - { app: sync, kind: worker, image: "timberio/vector (public)", note: "Vector: Kafka topic user_info → Elasticsearch; đồng bộ user" }
+  gitops:
+    dev:
+      path: tne5/devops/tne5-argocd-manifest
+      values: values-dev.yaml
+      note: "nginx ingress, ns tn-dev"
+    config:
+      id: 166
+      path: devops/tnv/tne5-argocd-config
+  common_chart: devops/common-chart   # fork bjw-s common 4.6.2
+
+master_data:
+  owner: v5
+  entities: [trường, huyện, tỉnh]
+  exposed_via: REST API
+  consumers: [v2, v6]
+  note: "Sửa schema master data ở V5 → cân nhắc consumer V2/V6."
+
+stack:
+  primary_db: "YugabyteDB 192.168.80.39:5433"
+  cache: "Redis Sentinel .80.39-40"
+  messaging: "Kafka .80.48-50"
+  search: "Elasticsearch .80.45-47"
+  analytics: "ClickHouse .80.56"
+  document: "MongoDB .60.21-24 (dùng chung)"
+  legacy_cluster: ".80.35 (Directus/Gotenberg/PG-Keycloak)"
+
+# Quan hệ FE V2 ↔ V5: KHÔNG chung codebase. 2 repo/2 domain, chỉ giống layout.
+fe_relationship:
+  v5_fe: tne5/frontend/v5
+  v5_domain_prod: trangnguyen.edu.vn
+  v2_fe: tne5/frontend/exam-page
+  v2_domain_prod: thi.trangnguyen.edu.vn
+  cross_nav: "click menu V2 khi ở V5 → thi.trangnguyen.edu.vn; menu V5 khi ở V2 → trangnguyen.edu.vn"
+  note: "Sửa layout/menu 1 bên → đồng bộ visual parity + link chéo bên kia, nhưng build/deploy độc lập."
+
+platform:
+  DEV:
+    project_id: 8
+    name: tne5-dev
+    namespace: tn-dev
+    argocd_project: tne5-dev
+  STAG: null
+  PROD: null   # chưa tài liệu hóa
+
+ops_docs:
+  repo: devops/tnv/tnv-troubleshoot-helper
+  overview: systems/tne5/OVERVIEW.md
+
+apps_sample:
+  - tne5-dev-web
+  - tne5-dev-api
+  - tne5-dev-admin
+  - tne5-dev-iam
+  - tne5-dev-cdc
+  - tne5-dev-pipe
+  - tne5-dev-sync
+
+local_clone_placeholder: C:\TungVu\OnlineStorage\OneDrive - Cong ty TNHH Dau tu Giao duc Trang Nguyen\source_code\tne5-frontend-v5

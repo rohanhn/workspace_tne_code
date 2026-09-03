@@ -1,0 +1,17 @@
+---
+description: Mọi hành động ghi GitLab/Planka/ArgoCD restart phải được user confirm từng lần. Không merge MR.
+alwaysApply: true
+---
+
+# Confirm before write
+
+Không thực hiện cho đến khi user xác nhận **tường minh** (tên resource + hành động):
+
+- GitLab: comment MR, approve, merge, tạo MR, tạo branch, push
+- Platform: `request_restart_app_deployment` (kể cả khi có approval URL)
+- Planka: create/update/move/archive/assign
+- Git local: push, force, amend đã push
+
+Đọc (overview, diff, metrics, catalog) không cần confirm.
+
+**Không bao giờ** `merge_merge_request` trừ confirm từng IID. Restart PROD: nêu app + namespace trước khi đưa approval URL.
