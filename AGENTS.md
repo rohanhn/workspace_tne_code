@@ -4,9 +4,9 @@
 
 ## MCP
 
-- Ưu tiên **platform-system** (ArgoCD, overview, logs sau grant).
+- Ưu tiên **platform-system** (ArgoCD, overview, metrics). GET/READ MCP gọi ngay, không hỏi (`argocd_query_app_logs` loại trừ). Thiếu ENV vẫn GET overview, không kết luận. Pod logs: confirm rồi mới `request_log_access`.
 - **gitlab-tne**: chỉ dùng khi `health_check` authenticated. Token dán vào `.cursor/mcp.json` (gitignored) — không log PAT.
-- Cấm merge MR, restart PROD, sửa GitOps trừ khi user confirm tường minh từng hành động.
+- **Đề xuất sửa code** chỉ khi user yêu cầu tường minh. Cấm merge MR / sửa GitOps trừ khi confirm. **Restart PROD cấm tuyệt đối.**
 
 ## Skills
 

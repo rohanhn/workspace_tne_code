@@ -31,7 +31,7 @@ CI dùng `$CI_PROJECT_PATH` → **image registry path = group/repo nguồn**. Nh
 | `math-collab` | `tnmath/.../frontend-collab` | v6 |
 | `api` & `cdc` | chung image `tne5/backend/v5` | v5 |
 
-Monorepo: `tnv/tnv2-learn-exam-v2` build nhiều image (`tnv-exam-api`, `tnv-learn-api`, `tnv-student-api`, `tnv-consumer`, `tnv-consumer-sync-data`, `tnv-schedule`). Xem `catalog/products/v2-thi.yaml`.
+Monorepo: `tnv/tnv2-learn-exam-v2` build nhiều image (`tnv-exam-api`, `tnv-learn-api`, `tnv-student-api`, `tnv-consumer`, `tnv-consumer-sync-data`, `tnv-scheduler`). Xem `catalog/products/v2-thi.yaml`.
 
 ## Gotcha 1 — IAM có 2 Keycloak (phân biệt theo HOST)
 - **KC trung tâm = tne5** `v5-identity`: host `iam.dev-v3.trangnguyen.edu.vn` (dev) / `id.trangnguyen.edu.vn` (v6 prod), realm `tnv-main`/`tne-main`.

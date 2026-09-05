@@ -5,10 +5,10 @@ Sổ tay quy trình cho 4 nhóm task: **Review code / MR**, **Debug lỗi**, **D
 
 ## Nguyên tắc chung (đọc trước MỌI task)
 
-- **ENV guard** (rule `00-environment-guard.mdc`): dòng đầu mọi câu trả lời ops/dev/review/hotfix = `ENV: DEV | STAG | PROD | UNKNOWN` + namespace/platform project/ArgoCD app nếu biết. Thiếu ENV → hỏi lại, KHÔNG mặc định PROD. PROD = **chỉ đọc**.
+- **ENV guard** (rule `00-environment-guard.mdc`): dòng đầu mọi câu trả lời ops/dev/review/hotfix = `ENV: DEV | STAG | PROD | UNKNOWN` + namespace/platform project/ArgoCD app nếu biết. Thiếu ENV → vẫn GET overview, hỏi ENV, **không** kết luận, KHÔNG mặc định PROD. **Đề xuất sửa code chỉ khi user yêu cầu.** PROD = **chỉ đọc**; **restart PROD cấm tuyệt đối**.
 - **MCP routing** (rule `02-mcp-routing.mdc`): runtime (pod/log/metric/sync) = `platform-system`; GitLab (MR/diff/file/pipeline) = server workspace `project-0-workspace_tne_code-gitlab-tne-ws`. KHÔNG dùng `user-gitlab-tne`.
 - **Catalog trước** (rule `03-multi-product.mdc`): đọc `catalog/products.yaml` → `catalog/products/<slug>.yaml`; tra ops chi tiết ở `references/systems-overview.md` + `references/naming-and-gotchas.md` + repo `devops/tnv/tnv-troubleshoot-helper`.
-- **Confirm before write** (rule `01-confirm-before-write.mdc`): comment MR / approve / merge / tạo MR/branch / push / restart / Planka write → chỉ làm khi user xác nhận **tường minh** (tên resource + hành động). Đọc thì không cần confirm.
+- **Confirm before write** (rule `01-confirm-before-write.mdc`): GET/READ MCP (overview, diff, metrics, list/get) **gọi ngay, không hỏi** — **trừ** `argocd_query_app_logs`. Comment MR / approve / merge / tạo MR/branch / push / restart DEV-STAG / `request_log_access` / Planka write → chỉ làm khi user xác nhận **tường minh**. Restart PROD: cấm tuyệt đối.
 - **Gotcha thường trúng:** tag chạy thật ở `.argocd-source-*.yaml` (không phải `values.yaml`); ENV không suy từ namespace/branch; PROD v2/bcn ở repo manifest CŨ; app→app đi qua HAProxy `192.168.60.6` (domain thiếu map = silent-drop); IAM có 2 Keycloak phân biệt theo HOST; app ArgoCD ≠ tên repo (bảng mapping trong `naming-and-gotchas.md`).
 
 ---
@@ -49,16 +49,16 @@ Sổ tay quy trình cho 4 nhóm task: **Review code / MR**, **Debug lỗi**, **D
 
 > Skill: `trace-prod-incident`. Dùng cho bug PROD/STAG, CS ticket, hotfix, outage.
 
-**Mục đích:** khoanh vùng sản phẩm → app ArgoCD → bằng chứng (log/metric/tag/commit); đề xuất fix. KHÔNG apply lên PROD.
+**Mục đích:** khoanh vùng sản phẩm → app ArgoCD → bằng chứng (log/metric/tag/commit). KHÔNG apply lên PROD. Đề xuất sửa code/hotfix **chỉ khi user yêu cầu**.
 
-**Input cần có:** triệu chứng, sản phẩm (nếu biết), thời điểm, ENV. Thiếu ENV → hỏi.
+**Input cần có:** triệu chứng, sản phẩm (nếu biết), thời điểm, ENV. Thiếu ENV → vẫn GET overview, hỏi ENV, không kết luận/hotfix.
 
 **Quy trình:**
 1. **Đọc `tnv-troubleshoot-helper` TRƯỚC:** `systems/<hệ>/OVERVIEW.md` theo đường traffic domain → LB → service → infra, `notes/<hệ>.md`, `runbooks/`. Đây là bản đồ vận hành sống.
 2. Map triệu chứng → sản phẩm/app qua catalog + `references/`. Chú ý domain public → HAProxy: timeout "treo không response" thường do domain thiếu trong HAProxy map (silent-drop).
 3. `platform_get_project_overview(projectId)` → tình trạng sync/health các app của ENV đó.
 4. `argocd_get_app(appName)` → pod, **image tag thật** (`.argocd-source-*`), Helm values, GitOps path.
-5. **Log:** `request_log_access` (1 lần/app) → đưa URL cho user → sau grant `argocd_query_app_logs`. Gom nhóm để đỡ xin lại nhiều lần.
+5. **Log:** không gọi ngay `argocd_query_app_logs`. Confirm app + đọc log → `request_log_access` (1 lần/app) → đưa URL → sau grant mới `argocd_query_app_logs`. Overview/metrics/pipeline log GitLab gọi thẳng.
 6. Sentry (nếu BE có project): đối chiếu lỗi theo thời điểm.
 7. Đối chiếu image tag ↔ commit GitLab (MR gần nhất). Nếu clone local có sẵn → đọc code.
 
@@ -69,9 +69,9 @@ Sổ tay quy trình cho 4 nhóm task: **Review code / MR**, **Debug lỗi**, **D
 - V6 realtime/loadtest timeout → EMQX/MQTT + `runbooks/tnmath-preuat-loadtest-timeout.md`.
 - Timeout app→app (tnv/bcn) → check HAProxy `192.168.60.6` map trước.
 
-**Output:** theo `.cursor/skills/trace-prod-incident/output-template.md` — dòng đầu `ENV:`, tóm tắt triệu chứng → root-cause (hoặc giả thuyết + bằng chứng) → đề xuất hotfix (mô tả, KHÔNG apply) → bước xác minh.
+**Output:** theo `.cursor/skills/trace-prod-incident/output-template.md` — dòng đầu `ENV:`, tóm tắt triệu chứng → root-cause (hoặc giả thuyết + bằng chứng) → bước xác minh. Đề xuất hotfix **chỉ khi user yêu cầu** (mô tả, KHÔNG apply).
 
-**Cấm tự động:** restart, sync, merge, push GitOps, đổi tag. Chỉ **đề xuất** hotfix. PROD tuyệt đối chỉ đọc.
+**Cấm tự động:** restart PROD (tuyệt đối). DEV/STAG: restart/sync/merge/push GitOps/đổi tag chỉ khi confirm. Không tự đề xuất sửa code. PROD tuyệt đối chỉ đọc.
 
 ---
 
@@ -140,9 +140,9 @@ Sổ tay quy trình cho 4 nhóm task: **Review code / MR**, **Debug lỗi**, **D
 
 | Task | Skill | MCP chính | Ghi/Write? |
 |---|---|---|---|
-| Review code/MR | `code-review-mr` (+ Bugbot) | gitlab-tne-ws | Chỉ khi confirm IID + hành động |
-| Debug lỗi | `trace-prod-incident` | platform-system (+ gitlab-tne-ws) | Không (chỉ đề xuất) |
+| Review code/MR | `code-review-mr` (+ Bugbot) | gitlab-tne-ws | GET ngay; ghi chỉ khi confirm IID + hành động |
+| Debug lỗi | `trace-prod-incident` | platform-system (+ gitlab-tne-ws) | Không; đề xuất code chỉ khi user yêu cầu |
 | Dev feature | `dev-feature` | gitlab-tne-ws (clone local) | Không push/MR trừ khi confirm |
 | Security scan | `review-security` (subagent) | gitlab-tne-ws / clone local | Không (chỉ báo cáo) |
 
-Mọi task: dòng đầu `ENV:`; PROD chỉ đọc; không in PAT/secret; không commit `.cursor/mcp.json`.
+Mọi task: dòng đầu `ENV:` (thiếu ENV vẫn GET overview, không kết luận); đề xuất sửa code chỉ khi user yêu cầu; PROD chỉ đọc, **restart PROD cấm tuyệt đối**; không in PAT/secret; không commit `.cursor/mcp.json`.

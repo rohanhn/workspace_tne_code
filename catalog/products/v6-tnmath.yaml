@@ -5,27 +5,124 @@ verified: true
 architecture: micro-service   # NestJS + Python, realtime MQTT/EMQX
 origin: outsource             # source gốc tinhvan → mirror group tnmath
 
+techstack:
+  source: devops/tnv/tnv-troubleshoot-helper
+  overview: systems/tnmath/OVERVIEW.md
+  snapshot: 2026-08-23
+  scope: "group tnmath: NestJS + Python + MQTT workers + Next.js FE + APISIX. Auth IAM tne5."
+
 gitlab:
   source_group: tnmath
   default_branch: develop      # trừ frontend-arena=main, arena-mqtt-service=pre-uat-tne
   services_be:
-    - user-service
-    - payment-service
-    - media-service
-    - game-service
-    - game-mqtt-service
-    - cms-service              # app ArgoCD: learning-service (tên lệch)
-    - business-service
-    - consumption-service
-    - cronjob-service
-    - arena-service
-    - arena-mqtt-service       # branch pre-uat-tne
-    - scorecard-recommendation # app ArgoCD: scorecard-service (tên lệch)
+    - app: user-service
+      kind: BE
+      lang: TypeScript
+      framework: NestJS
+      port: 3002
+    - app: business-service
+      kind: BE
+      lang: TypeScript
+      framework: NestJS
+      port: 3008
+    - app: cms-service
+      kind: BE
+      lang: TypeScript
+      framework: NestJS
+      port: 3004
+      argocd_app: learning-service   # tên lệch
+    - app: arena-service
+      kind: BE
+      lang: TypeScript
+      framework: NestJS
+      port: 3007
+    - app: game-service
+      kind: BE
+      lang: TypeScript
+      framework: NestJS
+      port: 3002
+    - app: payment-service
+      kind: BE
+      lang: TypeScript
+      framework: NestJS
+      port: 3009
+    - app: scorecard-recommendation
+      kind: BE
+      lang: TypeScript
+      framework: NestJS
+      port: 3008
+      argocd_app: scorecard-service   # tên lệch
+    - app: consumption-service
+      kind: worker
+      lang: TypeScript
+      framework: NestJS
+      port: 3009
+      note: Kafka consumer, strategy Recreate
+    - app: media-service
+      kind: BE
+      lang: Python
+      framework: Flask
+      port: 5000
+    - app: cronjob-service
+      kind: worker
+      lang: Python
+      framework: Airflow 2.10.4
+      port: 5001
+    - app: arena-mqtt-service
+      kind: worker
+      framework: MQTT worker
+      port: null
+      default_branch: pre-uat-tne
+      note: 2 Deployment lobby/presence
+    - app: game-mqtt-service
+      kind: worker
+      framework: MQTT worker
+      port: null
+      note: 2 Deployment lobby/presence
   services_fe:
-    - frontend-math-website
-    - frontend-math-admin
-    - frontend-collab          # app ArgoCD: math-collab (tên lệch)
-    - frontend-arena           # branch main
+    - app: frontend-math-website
+      kind: FE
+      lang: JavaScript
+      framework: Next.js
+      port: 4000
+    - app: frontend-arena
+      kind: FE
+      lang: JavaScript
+      framework: Next.js
+      port: 4000
+      path: /math-arena
+      default_branch: main
+    - app: frontend-math-admin
+      kind: FE
+      lang: JavaScript
+      framework: Next.js
+      port: 4001
+    - app: frontend-collab
+      kind: FE
+      lang: JavaScript
+      framework: Next.js
+      port: 4000
+      path: /collab
+      argocd_app: math-collab   # tên lệch
+  infra_edge:
+    - app: apisix-api
+      framework: APISIX 3.11
+      role: api gateway
+    - app: apisix-admin
+      framework: APISIX 3.11
+      role: admin gateway
+    - app: apisix-website
+      framework: APISIX 3.11
+      role: website gateway
+    - app: elasticsearch-sync
+      kind: CronJob
+      image: python:3.12-slim
+      schedule: every 1 minute
+    - app: redis-cache-clean
+      kind: CronJob
+      image: python:3.12-slim
+      schedule: "02:00"
+      note: "values _values-dev.yaml nghi không được ArgoCD nạp"
   name_mismatch:
     learning-service: cms-service
     scorecard-service: scorecard-recommendation
@@ -33,7 +130,7 @@ gitlab:
   gitops: null   # cần map khi onboard
 
 stack:
-  gateway: APISIX (api/admin/website)
+  gateway: APISIX 3.11 (api/admin/website)
   realtime: "MQTT / EMQX .140.71-73"
   primary_db: "PostgreSQL .140.34:5433"
   document: "MongoDB .140.61-63"
@@ -45,7 +142,10 @@ stack:
   hotspot: "Realtime & loadtest là điểm nóng"
 
 iam:
-  central: "auth vào IAM tne5 (v5-identity), prod host id.trangnguyen.edu.vn, realm tne-main"
+  central: "auth vào IAM tne5 (v5-identity)"
+  preuat: "iam.dev-v3, realm tnv-main (client fe1); admin realm tnmath-admin"
+  prod: "id.trangnguyen.edu.vn, realm tne-main (client v6-private); admin tnmath-admin"
+  see: catalog/products/kc-identity.yaml
 
 platform:
   DEV: null    # chưa onboard Platform

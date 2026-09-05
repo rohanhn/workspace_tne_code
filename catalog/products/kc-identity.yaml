@@ -4,24 +4,47 @@ aliases: [keycloak, iam, identity]
 verified: true
 architecture: shared-identity
 
+techstack:
+  source: devops/tnv/tnv-troubleshoot-helper
+  snapshot: "iam 2026-08-26 · tnv keycloak 2026-08-24"
+  note: "CÓ 2 KEYCLOAK — luôn phân biệt theo HOST, không nhầm iam-dev (tnv) với iam.dev-v3 (tne5)."
+
 # CÓ 2 KEYCLOAK — luôn phân biệt theo HOST, không nhầm.
 keycloaks:
   central:
     role: "IAM trung tâm — auth chung cho V6 + phần lớn V2/V5"
     image: tne5/frontend/v5-identity   # id 128, branch master
     app: iam                            # thuộc hệ tne5 (v5)
+    argocd_app: tne5-iam-dev
+    workload: iam-dev
+    dest_namespace: tne5-dev
+    framework: Keycloak 26.2.3
+    port: 8080
+    management_port: 9000
+    cache: "KC_CACHE=local (không cluster cache)"
     host_dev: iam.dev-v3.trangnguyen.edu.vn
     host_prod: id.trangnguyen.edu.vn
-    realm: [tnv-main, tne-main]
-    migration: "đang migrate user tnv sang đây (lazy migration keycloak-rest-provider; listener AdminUserCreationInterceptor gọi webhook khi tạo user)"
+    realm: [tnv-main, tne-main, tnv-noi-bo, tnv-quantri, tnmath-admin]
+    db: "keycloak_dev @ 192.168.80.35:30432 (CNPG cụm cũ) — KHÁC keycloak_dev2 của tnv"
+    bcrypt: false
+    providers:
+      - "keycloak-rest-provider (danielfrak user-migration + AdminUserCreationInterceptor webhook)"
+      - "keycloak-events phasetwo"
+      - "tna-identity.jar theme login"
+    migration: "đang migrate user tnv sang đây (lazy migration; webhook lỗi → user KHÔNG được tạo)"
+    ops_doc: systems/tne5/services/iam.md
   legacy_v2:
     role: "KC v2 (cũ) — một số app cms/quantri của tnv"
     image: tnv/keycloak                 # id 53, branch master
-    app: keycloak                        # app keycloak-cluster trong tnv-argocd-manifest, tag prod
+    app: keycloak                        # ArgoCD tnv-dev-keycloak; operator sinh StatefulSet
+    framework: Keycloak 26.7.1
+    bcrypt: true                         # BẮT BUỘC — realm password policy bcrypt (khác IAM tne5)
+    manage: "Keycloak Operator CR; pin tag tay, KHÔNG Image Updater"
     host: iam-dev
     realm: tnv
-    db: keycloak_dev2@192.168.60.25:9999
+    db: "keycloak_dev2 @ 192.168.60.25:9999 (PG shared tnv) — không phải keycloak_dev của iam tne5"
     note: "ĐỪNG nhầm iam-dev (tnv) với deployment iam-dev của tne5 (host iam.dev-v3)."
+    ops_doc: systems/tnv/services/keycloak.md
 
 user_sync:
   services: [cdc, sync]     # nằm trong V5 (tne5)
@@ -30,8 +53,8 @@ user_sync:
 gitlab:
   source_repos:
     - { repo: tnv/keycloak, id: 53, branch: master, role: "KC v2 legacy" }
-    - { repo: tne5/frontend/v5-identity, id: 128, branch: master, role: "IAM trung tâm FE" }
-  gitops: null   # deploy kèm hệ tnv (keycloak-cluster) và tne5 (iam)
+    - { repo: tne5/frontend/v5-identity, id: 128, branch: master, role: "IAM trung tâm (custom Keycloak image)" }
+  gitops: null   # deploy kèm hệ tnv (keycloak) và tne5 (iam)
 
 platform:
   DEV: null   # chưa có app riêng trên Platform; xử lý như identity dùng chung
@@ -40,6 +63,9 @@ platform:
 
 ops_docs:
   repo: devops/tnv/tnv-troubleshoot-helper
-  overview: systems/tnv/services   # IAM mô tả trong systems của tnv/tne5
+  overview:
+    - systems/tne5/services/iam.md
+    - systems/tnv/services/keycloak.md
+  v6_usage: systems/tnmath/infra/keycloak-iam.md
 
 local_clone_placeholder: C:\TungVu\OnlineStorage\OneDrive - Cong ty TNHH Dau tu Giao duc Trang Nguyen\source_code\kc-identity

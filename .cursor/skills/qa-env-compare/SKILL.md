@@ -16,7 +16,7 @@ description: Compares DEV vs STAG (and PROD when cataloged) ArgoCD apps — imag
 
 ## Forbidden
 
-Do not edit GitOps, sync, or restart to "make them match".
+Do not edit GitOps, sync, or restart to "make them match". Restart PROD is forbidden even with confirm.
 
 ## Output
 

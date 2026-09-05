@@ -6,22 +6,84 @@ architecture: monolith   # BE gộp; FE tách theo mặt tiền
 origin: outsource        # đối tác viết → BCN maintain sau bàn giao
 role: hub                # trang chủ trangnguyen.edu.vn → điều hướng sang v6 và v2
 
+techstack:
+  source: devops/tnv/tnv-troubleshoot-helper
+  overview: systems/tne5/OVERVIEW.md
+  snapshot: 2026-08-24
+  scope: "7 app ArgoCD tne5. Dev hostname lẫn stag-v3 và dev-v3. IAM chi tiết: catalog/products/kc-identity.yaml."
+
 # 7 thành phần ArgoCD (verify từ tne5-argocd-manifest + troubleshoot-helper)
 gitlab:
   source_group: tne5
+  hostname_note: "dev dùng lẫn stag-v3 (web) và *.dev-v3 (admin/iam); api ăn cả hai"
   components:
-    - { app: api, kind: BE, repo: tne5/backend/v5, stack: "Node.js :8000 monolith", host: "api.stag-v3 / api.dev-v3", note: "giữ master data trường/huyện/tỉnh, cấp REST cho V khác" }
-    - { app: web, kind: FE, repo: tne5/frontend/v5, desc: "Web tin tức (user)", host: stag-v3 }
-    - { app: admin, kind: FE, repo: tne5/frontend/admin-v5, desc: "CMS tin tức (admin)", host: admin.dev-v3 }
-    - { app: iam, kind: FE, repo: tne5/frontend/v5-identity, desc: "Keycloak IAM trung tâm", host: iam.dev-v3, realm: tnv-main }
-    - { app: cdc, kind: worker, repo: tne5/backend/v5, note: "chung image với api; đồng bộ user (CDC)" }
-    - { app: pipe, kind: worker, image: "timberio/vector (public)", note: "Vector: Kafka → ClickHouse (learning log)" }
-    - { app: sync, kind: worker, image: "timberio/vector (public)", note: "Vector: Kafka topic user_info → Elasticsearch; đồng bộ user" }
+    - app: api
+      kind: BE
+      repo: tne5/backend/v5
+      image: tne5/backend/v5
+      lang: Node.js
+      framework: "monolith (Bull queue + KafkaJS suy từ env; framework chưa confirm ops)"
+      port: 8000
+      health: GET /healthz
+      host: "api.stag-v3 / api.dev-v3"
+      payment_ipn: "payment.stag-v3 / payment.dev-v3 path /v5/payments/ipn/vnpay"
+      deps: "Yugabyte, Redis Sentinel, Kafka, ES, ClickHouse, Mongo, MinIO"
+      note: "giữ master data trường/huyện/tỉnh, cấp REST cho V khác"
+    - app: cdc
+      kind: worker
+      repo: tne5/backend/v5
+      image: tne5/backend/v5
+      lang: Node.js
+      note: "chung image với api; đồng bộ user (CDC) qua Kafka"
+    - app: web
+      kind: FE
+      repo: tne5/frontend/v5
+      image: tne5/frontend/v5
+      lang: Node.js
+      framework: "SSR :3000 (Next/Nuxt chưa confirm ops)"
+      port: 3000
+      host: stag-v3
+      deps: "api, IAM iam.dev-v3 realm tnv-main, Redis Sentinel"
+      desc: "Web tin tức (user)"
+    - app: admin
+      kind: FE
+      repo: tne5/frontend/admin-v5
+      image: tne5/frontend/admin-v5
+      framework: "SPA tĩnh (framework chưa confirm ops)"
+      port: 80
+      host: admin.dev-v3
+      desc: "CMS tin tức (admin); config API nhiều khả năng bake vào build"
+    - app: iam
+      kind: iam
+      repo: tne5/frontend/v5-identity
+      image: tne5/frontend/v5-identity
+      framework: Keycloak 26.2.3
+      port: 8080
+      management_port: 9000
+      dest_namespace: tne5-dev   # không phải tn-dev
+      argocd_app: tne5-iam-dev
+      workload: iam-dev
+      host: iam.dev-v3
+      realm: [tnv-main, tnv-noi-bo, tnv-quantri, tnmath-admin]
+      db: "keycloak_dev @ 192.168.80.35:30432 (CNPG cụm cũ)"
+      cache: "KC_CACHE=local (không cluster)"
+      bcrypt: false
+      see: catalog/products/kc-identity.yaml
+    - app: pipe
+      kind: worker
+      image: timberio/vector
+      framework: Vector
+      note: "Kafka → ClickHouse (learning log); config trong manifest, không repo app"
+    - app: sync
+      kind: worker
+      image: timberio/vector
+      framework: Vector
+      note: "Kafka topic user_info → Elasticsearch; đồng bộ user"
   gitops:
     dev:
       path: tne5/devops/tne5-argocd-manifest
       values: values-dev.yaml
-      note: "nginx ingress, ns tn-dev"
+      note: "nginx ingress; workload api/web/admin ns tn-dev; iam ns tne5-dev"
     config:
       id: 166
       path: devops/tnv/tne5-argocd-config
@@ -64,6 +126,7 @@ platform:
 ops_docs:
   repo: devops/tnv/tnv-troubleshoot-helper
   overview: systems/tne5/OVERVIEW.md
+  services: systems/tne5/services/
 
 apps_sample:
   - tne5-dev-web

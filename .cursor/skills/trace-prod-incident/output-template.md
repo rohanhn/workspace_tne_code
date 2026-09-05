@@ -18,5 +18,5 @@
 ## Next steps (human)
 
 - Reproduce on STAG:
-- Proposed hotfix repo/branch:
+- Proposed hotfix repo/branch: **chỉ khi user yêu cầu đề xuất/sửa code**
 - PROD change: **not applied**

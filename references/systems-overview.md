@@ -23,16 +23,19 @@ Nguồn chi tiết & luôn cập nhật: repo `devops/tnv/tnv-troubleshoot-helpe
 - Datastore IP tĩnh dùng chung: Mongo .60.21-24 (**DB chính**), Redis .60.21-23 (**session**), **Kafka .60.31/32/44** (thi online ~500k CCU), **RabbitMQ .60.26** (task background), PG .60.25:9999, ES 10.0.0.207, ClickHouse 10.0.0.58, MinIO (object storage). Secret qua Vault ExternalSecret.
 - Sentry self-host: `tnv-service`=proj4, `tnv2-learn-exam`=3, `tnv2-learn-exam-v2`=13.
 - Nghẽn thi online thường ở **Kafka/consumer** (throughput), không phải API stateless.
+- Tech stack từng service (group `tnv` + `exam-page`): [`catalog/products/v2-thi.yaml`](../catalog/products/v2-thi.yaml) → `techstack` / `gitlab.monorepo` / `standalone_services` / `frontend_services`.
 
 ### v5 (tne5) — monolith · `systems/tne5/OVERVIEW.md`
 - ns `tn-dev`, nginx ingress. BE `api` (Node.js :8000 monolith) + `cdc` (chung image `tne5/backend/v5`).
 - DB: **YugabyteDB .80.39:5433** (chính), Redis Sentinel .80.39-40, Kafka .80.48-50, ES .80.45-47, ClickHouse .80.56, Mongo .60.21-24 (chung).
 - Pipeline Vector: `pipe` (Kafka → ClickHouse, learning log), `sync` (Kafka topic `user_info` → ES). Cụm cũ `.80.35` (Directus/Gotenberg/PG-KC).
+- Tech stack từng component: [`catalog/products/v5-hoc.yaml`](../catalog/products/v5-hoc.yaml) → `techstack` / `gitlab.components`. IAM: [`kc-identity.yaml`](../catalog/products/kc-identity.yaml).
 
 ### v6 (tnmath) — micro-service · `systems/tnmath/OVERVIEW.md` + `notes/tnmath.md`
 - NestJS + Python, realtime MQTT/EMQX, gateway APISIX (api/admin/website). Cụm pre-UAT `.140.x`, prod `10.80.0.x`.
 - PG .140.34:5433, Mongo .140.61-63, Redis .140.41-43, Kafka .140.81-83, ES .140.52, MinIO .140.51:9002, EMQX .140.71-73.
 - Source gốc tinhvan → mirror group `tnmath`. **Realtime & loadtest là điểm nóng** (xem `runbooks/tnmath-preuat-loadtest-timeout.md`).
+- Tech stack từng service: [`catalog/products/v6-tnmath.yaml`](../catalog/products/v6-tnmath.yaml) → `techstack` / `gitlab.services_be` / `services_fe` / `infra_edge`.
 
 ### bcn (in-house) · `systems/bcn/OVERVIEW.md`
 - Dev ns `bcn-dev` chung cụm `cluster-dev-tnv`. crm (Laravel, MySQL+Redis .60.33), crm2 (`erp/crm-v2`, FastAPI+SPA), chatbot (`tne-chat`, backend n8n), vnmf. Vault KV `bcn`.

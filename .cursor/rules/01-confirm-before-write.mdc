@@ -1,17 +1,35 @@
 ---
-description: Mọi hành động ghi GitLab/Planka/ArgoCD restart phải được user confirm từng lần. Không merge MR.
+description: GET/READ MCP gọi ngay không hỏi. Đề xuất sửa code chỉ khi user yêu cầu. Ghi GitLab/Planka/restart DEV-STAG và request_log_access phải confirm. Restart PROD cấm.
 alwaysApply: true
 ---
 
 # Confirm before write
 
+## Read: gọi ngay
+
+Không hỏi “có được query GitLab/Platform/Planka không?”. Gọi tool GET/LIST/SEARCH/DETAIL ngay khi cần kết quả:
+
+- GitLab MCP ws: `health_check`, `whoami`, `list_*`, `get_*`, diffs, notes đọc, pipeline/job đọc, `get_file_contents`, `get_repository_tree`
+- Platform: `platform_list_projects`, `platform_get_project_overview`, `argocd_get_app*` (metadata/config/resources/metrics/tuning — **không** gồm `argocd_query_app_logs`), `gitlab_get_*` / `gitlab_list_*` / `gitlab_query_pipeline_log`, Grafana/Sentry/metrics đọc, Planka `list` / `get` / `search`
+- Catalog + clone local: đọc file không hỏi
+
+**Loại trừ (không gọi ngay):** `argocd_query_app_logs` — chỉ sau `request_log_access` đã confirm + user đã grant (rule `02`).
+
+Thiếu ENV: vẫn GET overview như trên; gắn `ENV: UNKNOWN` và hỏi ENV. Không kết luận (rule `00`). Đó không phải xin phép MCP read.
+
+## Đề xuất sửa code
+
+Chỉ khi user **yêu cầu tường minh** (sửa, hotfix, implement, đề xuất fix). Trace/QA: không tự đưa patch/plan. Review MR khi user đã hỏi review: được nêu Critical/Suggestion trên diff đó — không tự implement.
+
+## Write: confirm tường minh
+
 Không thực hiện cho đến khi user xác nhận **tường minh** (tên resource + hành động):
 
 - GitLab: comment MR, approve, merge, tạo MR, tạo branch, push
-- Platform: `request_restart_app_deployment` (kể cả khi có approval URL)
+- Platform DEV/STAG: `request_restart_app_deployment` (kể cả khi có approval URL); **`request_log_access`** (rồi mới đưa URL grant)
 - Planka: create/update/move/archive/assign
 - Git local: push, force, amend đã push
 
-Đọc (overview, diff, metrics, catalog) không cần confirm.
+**Không bao giờ** `merge_merge_request` trừ confirm từng IID.
 
-**Không bao giờ** `merge_merge_request` trừ confirm từng IID. Restart PROD: nêu app + namespace trước khi đưa approval URL.
+**Restart PROD: cấm tuyệt đối** — không confirm, không approval URL, không `request_restart_app_deployment` / `execute_restart_app_deployment`.

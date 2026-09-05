@@ -21,28 +21,191 @@ stack:
   session_store: Redis              # V2 quản lý session trong Redis
   note: "Nghẽn thi online thường ở Kafka/consumer (throughput), không phải API stateless."
 
+# Tech stack từng service (group tnv + exam-page). Không gồm bancn/Noibo.
+# IP datastore: infra:. Env/Vault sống: ops_docs.overview.
+techstack:
+  source: devops/tnv/tnv-troubleshoot-helper
+  overview: systems/tnv/OVERVIEW.md
+  snapshot: 2026-08-24
+  scope: "GitLab group tnv + tne5/frontend/exam-page (hoc-thi-2). Không ghi khaosat-fe / bcn-cms / bcn-tnv2-api / support-tnv2-*."
+
 gitlab:
   source_group: tnv
   # tnv2-learn-exam-v2 là MONOREPO → build nhiều image (1 repo, nhiều workload)
   monorepo:
     repo: tnv/tnv2-learn-exam-v2   # id 52, develop
+    lang: Java
+    framework: Spring Boot
+    build: Maven multi-module
+    port: 8080
+    auth: "IAM tne5, host iam.dev-v3, realm tnv-main"
+    deps: "Mongo + Redis cluster + Kafka; RabbitMQ chỉ exam-api + 3 worker (learn-api/student-api không dùng)"
+    sentry_project: 13
     services:
-      - { app: tnv2-learn-exam-api-v2, image: tnv/tnv2-learn-exam-v2/tnv-exam-api, service_env: exam-api, host: api-me-dev/exam }
-      - { app: tnv2-learn-api-v2, image: tnv/tnv2-learn-exam-v2/tnv-learn-api, service_env: learn-api, host: api-me-dev/learning }
-      - { app: tnv2-student-api-v2, image: tnv/tnv2-learn-exam-v2/tnv-student-api, service_env: student-api, host: api-me-dev/student }
-      - { app: tnv2-learn-exam-consumer-v2, image: tnv/tnv2-learn-exam-v2/tnv-consumer, service_env: consumer }
-      - { app: tnv2-learn-exam-consumer-sync-data-v2, image: tnv/tnv2-learn-exam-v2/tnv-consumer-sync-data, service_env: consumer-sync-data }  # SYNC user
-      - { app: tnv2-learn-exam-schedule-v2, image: tnv/tnv2-learn-exam-v2/tnv-schedule }
+      - app: tnv2-learn-exam-api-v2
+        kind: BE
+        image: tnv/tnv2-learn-exam-v2/tnv-exam-api
+        service_env: exam-api
+        host: api-me-dev/exam
+        rabbitmq: true
+      - app: tnv2-learn-api-v2
+        kind: BE
+        image: tnv/tnv2-learn-exam-v2/tnv-learn-api
+        service_env: learn-api
+        host: api-me-dev/learning
+        rabbitmq: false
+      - app: tnv2-student-api-v2
+        kind: BE
+        image: tnv/tnv2-learn-exam-v2/tnv-student-api
+        service_env: student-api
+        host: api-me-dev/student
+        rabbitmq: false
+      - app: tnv2-learn-exam-consumer-v2
+        kind: worker
+        image: tnv/tnv2-learn-exam-v2/tnv-consumer
+        service_env: consumer
+        rabbitmq: true
+      - app: tnv2-learn-exam-consumer-sync-data-v2
+        kind: worker
+        image: tnv/tnv2-learn-exam-v2/tnv-consumer-sync-data
+        service_env: consumer-sync-data
+        note: SYNC user
+        rabbitmq: true
+      - app: tnv2-learn-exam-schedule-v2
+        kind: worker
+        image: tnv/tnv2-learn-exam-v2/tnv-scheduler
+        service_env: scheduler
+        rabbitmq: true
   standalone_services:
-    - { app: tnv-service, repo: tnv/tnv-service, host: api-dev }
-    - { app: api-cms-service, repo: tnv/cms-trang-nguyen-api, host: dev-api-cms2 }   # tên lệch!
-    - { app: cms-admin, repo: tnv/cms-admin, kind: FE, host: dev-cms2 }
-    - { app: quantri-trang-nguyen-api, repo: tnv/quantri-trang-nguyen-api, host: api-dev-quantri }
-    - { app: quantri-cms-admin, repo: tnv/quantri-cms-admin, kind: FE, host: dev-quantri }
-    - { app: media-server, repo: tnv/media-server, note: "dùng Service redis nội bộ (ngoại lệ)" }
-    - { app: consumer-service, repo: tnv/api-payment, image: tnv/api-payment/comsumers, note: "legacy payment consumer, typo comsumers" }
-    - { app: kafka-connect, repo: tnv/kafka-connect-cdc }   # tên lệch!
-    - { app: keycloak-cluster, repo: tnv/keycloak, note: "image tag prod ngay ở dev — xem KC v2" }
+    - app: tnv-service
+      kind: BE
+      repo: tnv/tnv-service
+      lang: Python
+      framework: FastAPI
+      runtime: gunicorn + Celery
+      port: 5000
+      host: api-dev
+      deps: "Mongo, Redis session, Kafka, RabbitMQ, ES, MinIO"
+      auth: "dev: iam-dev realm tnv; staging: iam.dev-v3 realm tnv-main (IAM tne5)"
+      sentry_project: 4
+    - app: tnv2-learn-exam
+      kind: BE
+      note: legacy, cùng domain api-me-* với v2 (path /reports dev, /close stag)
+      lang: Python
+      framework: FastAPI
+      port: 5001
+      sentry_project: 3
+    - app: api-cms-service
+      kind: BE
+      repo: tnv/cms-trang-nguyen-api   # tên lệch
+      lang: Python
+      framework: FastAPI + Celery
+      port: 5000
+      host: dev-api-cms2
+      note: api + background + cronjob
+    - app: quantri-trang-nguyen-api
+      kind: BE
+      repo: tnv/quantri-trang-nguyen-api
+      lang: Python
+      framework: FastAPI + Celery
+      port: 5000
+      host: api-dev-quantri
+    - app: tnv-background-service
+      kind: worker
+      lang: Python
+      framework: worker (no HTTP port)
+      note: chủ yếu STAG, không HTTPRoute
+    - app: consumer-service
+      kind: worker
+      repo: tnv/api-payment
+      image: tnv/api-payment/comsumers   # typo comsumers
+      lang: Java
+      framework: Spring Boot
+      port: 8080
+      note: legacy payment consumer; API payment chính chưa bật trên cụm mới
+    - app: kafka-connect
+      kind: infra
+      repo: tnv/kafka-connect-cdc   # tên lệch
+      lang: Java
+      framework: Kafka Connect CDC
+      port: 8083
+    - app: keycloak
+      kind: iam
+      repo: tnv/keycloak
+      argocd_app: keycloak   # catalog cũ: keycloak-cluster
+      framework: Keycloak 26.7.1 (operator CR)
+      host: iam-dev
+      realm: tnv
+      note: KC v2 cũ; cms/quantri. Tag prod từng thấy ở dev — phân biệt IAM tne5 theo HOST
+    - app: media-server
+      kind: BE
+      repo: tnv/media-server
+      lang: Go
+      port: 3000
+      note: ngoại lệ — dùng Service redis nội bộ k8s (không đi HAProxy)
+    - app: filestash
+      kind: infra
+      framework: Filestash + OnlyOffice (image public)
+      host: file-dev
+    - app: akhq-kafka-management
+      kind: infra
+      framework: AKHQ
+      port: 8080
+      host: akhq-dev
+      note: UI Kafka, chủ yếu DEV
+    - app: cms-landing
+      kind: FE
+      framework: Strapi
+      status: disabled   # values _disable
+  frontend_services:
+    - app: hoc-thi
+      kind: FE
+      lang: JavaScript
+      framework: Next.js 13
+      port: 3000
+      host: me-dev
+      note: FE Thi cũ
+    - app: hoc-thi-2
+      kind: FE
+      repo: tne5/frontend/exam-page
+      image: tne5/frontend/exam-page
+      lang: JavaScript
+      framework: Next.js
+      port: 3000
+      host: thi-stag-v3
+      note: FE Thi mới — không chung codebase V5
+    - app: cms-admin
+      kind: FE
+      repo: tnv/cms-admin
+      lang: JavaScript
+      framework: React + Vite
+      runtime: nginx
+      port: 80
+      host: dev-cms2
+    - app: quantri-cms-admin
+      kind: FE
+      repo: tnv/quantri-cms-admin
+      lang: JavaScript
+      framework: React + Vite
+      runtime: nginx
+      port: 80
+      host: dev-quantri
+    - app: landing-trang-nguyen
+      kind: FE
+      lang: JavaScript
+      framework: Next.js 13
+      port: 3000
+      host: dev-portal
+    - app: landing-tieng-viet
+      kind: FE
+      lang: JavaScript
+      framework: Next.js 13
+      port: 3000
+    - app: landing-toan-tai
+      kind: FE
+      lang: JavaScript
+      framework: Next.js 13
+      port: 3000
   gitops:
     dev_staging:
       id: 159
@@ -92,6 +255,7 @@ ops_docs:
   repo: devops/tnv/tnv-troubleshoot-helper
   overview: systems/tnv/OVERVIEW.md
   notes: notes/tnv.md
+  services: systems/tnv/services/
 
 apps_sample:
   - tnv-dev-hoc-thi-2

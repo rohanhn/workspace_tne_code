@@ -5,9 +5,9 @@ alwaysApply: true
 
 # MCP routing
 
-1. Ops runtime (pods, sync, Helm values, logs, metrics): **platform-system**.
+1. Ops runtime (pods, sync, Helm values, metrics): **platform-system**. Overview / `argocd_get_app` (config/resources/metrics/tuning) / GitLab pipeline log: **gọi thẳng**, không hỏi (rule `01`). Thiếu ENV vẫn GET overview; không kết luận/hotfix. **Không** gọi `argocd_query_app_logs` trong nhóm này.
 2. GitLab source (list group, file, MR diff, pipeline): **server workspace `project-0-workspace_tne_code-gitlab-tne-ws`** (PAT đủ scope, đã `health_check` authenticated). Đây là server GitLab DUY NHẤT được dùng.
 3. **KHÔNG dùng `user-gitlab-tne`** (server user-level `~/.cursor/mcp.json`, token cũ → 403 giả). Nếu thấy cả hai server GitLab, luôn chọn `...-gitlab-tne-ws`; nhắc user tắt server user-level trong Settings → MCP.
 4. Nếu GitLab MCP workspace 403/unauthenticated: nói rõ, dùng Platform `gitlab_get_repo_detail` theo id đã có trong catalog; không đoán id.
-5. Pod logs: `request_log_access` → đưa URL cho user → mới `argocd_query_app_logs`.
+5. Pod logs: **không** gọi ngay `argocd_query_app_logs`. **Không** tự `request_log_access`. Chỉ sau confirm tường minh (app + đọc log) → URL grant → user grant xong mới `argocd_query_app_logs`. Restart PROD: cấm tuyệt đối (rule `00`/`01`).
 6. Không in PAT, Bearer, hay nội dung `.cursor/mcp.json` ra chat.
