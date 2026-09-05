@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "stop": [
+      {
+        "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/daily-commit-report.ps1",
+        "timeout": 45,
+        "loop_limit": 1
+      }
+    ]
+  }
+}

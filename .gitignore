@@ -4,6 +4,9 @@
 .env.local
 *.pem
 
+# Hook runtime stamp (once-per-day daily commit report)
+.cursor/hooks/state/
+
 # OS / editor
 Thumbs.db
 Desktop.ini
