@@ -9,8 +9,8 @@ role: hub                # trang chủ trangnguyen.edu.vn → điều hướng s
 techstack:
   source: devops/tnv/tnv-troubleshoot-helper
   overview: systems/tne5/OVERVIEW.md
-  snapshot: 2026-08-24
-  scope: "7 app ArgoCD tne5. Dev hostname lẫn stag-v3 và dev-v3. IAM chi tiết: catalog/products/kc-identity.yaml."
+  snapshot: "2026-08-24 · user pipes 2026-09-07"
+  scope: "7 app ArgoCD tne5. Dev hostname lẫn stag-v3 và dev-v3. IAM + 4 ống user: catalog/products/kc-identity.yaml."
 
 # 7 thành phần ArgoCD (verify từ tne5-argocd-manifest + troubleshoot-helper)
 gitlab:
@@ -34,7 +34,7 @@ gitlab:
       repo: tne5/backend/v5
       image: tne5/backend/v5
       lang: Node.js
-      note: "chung image với api; đồng bộ user (CDC) qua Kafka"
+      note: "chung image với api; Mongo change stream → IAM updateUser. KHÔNG phải Vector sync. cdc_logs SUCCESS ≠ user đã có trên V5. Chi tiết: kc-identity.yaml pipes.cdc_mongo_to_iam"
     - app: web
       kind: FE
       repo: tne5/frontend/v5
@@ -69,6 +69,7 @@ gitlab:
       cache: "KC_CACHE=local (không cluster)"
       bcrypt: false
       see: catalog/products/kc-identity.yaml
+      staging: "không có app IAM STAG; V2/V5 staging auth tne5-dev-iam (host iam.dev-v3)"
     - app: pipe
       kind: worker
       image: timberio/vector
@@ -78,7 +79,7 @@ gitlab:
       kind: worker
       image: timberio/vector
       framework: Vector
-      note: "Kafka topic user_info → Elasticsearch; đồng bộ user"
+      note: "Vector: Kafka topic user_info → Elasticsearch (search only). KHÔNG đụng IAM/Mongo. Thiếu user trên ES → đây; lệch login/profile → webhook api + cdc, không app này."
   gitops:
     dev:
       path: tne5/devops/tne5-argocd-manifest
@@ -97,7 +98,7 @@ master_data:
   note: "Sửa schema master data ở V5 → cân nhắc consumer V2/V6."
 
 stack:
-  primary_db: "YugabyteDB 192.168.80.39:5433"
+  primary_db: "YugabyteDB 192.168.80.39:5433 db trangnguyen_dev — bảng user = profile V5 (id UUID, keycloak_user_id, idv0). KHÔNG phải DB Keycloak (keycloak_dev @ .80.35)."
   cache: "Redis Sentinel .80.39-40"
   messaging: "Kafka .80.48-50"
   search: "Elasticsearch .80.45-47"

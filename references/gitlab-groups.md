@@ -14,6 +14,7 @@ Nguồn: `list_namespaces` / `list_projects` qua server workspace `project-0-wor
 | tnmath | 266 | `tnmath` | **V6 / TNMath** | 16 projects. Mirror từ tinhvan. |
 | typing-game | 147 | `typing-game` | **LachCach** | 3 projects: `game-client`, `gameserver`, `cms`. |
 | bancn | 59 | `bancn` | **BCN Inhouse** | 19 projects. Subgroups: `crm` (172), `vnmf` (217). Noibo = `support_tnv2*`. |
+| bancn/vnmf | 217 | `bancn/vnmf` | **VNMF** | 2 projects: `vnmf-frontend` (114), `vnmf-cms-landing` (113). Catalog `vnmf.yaml`. |
 | erp | 294 | `erp` | BCN CRM2 | `erp/crm-v2` (165). |
 
 ## Groups GitOps / DevOps
@@ -29,13 +30,14 @@ Nguồn: `list_namespaces` / `list_projects` qua server workspace `project-0-wor
 
 ## KC / Identity (2 Keycloak — phân biệt theo HOST)
 
-- KC trung tâm (IAM): `tne5/frontend/v5-identity` (128) — host `iam.dev-v3`, realm `tnv-main`.
-- KC v2 (cũ): `tnv/keycloak` (53) — host `iam-dev`, realm `tnv`, cho cms/quantri.
+- KC trung tâm (IAM): `tne5/frontend/v5-identity` (128) — host `iam.dev-v3`, realm `tnv-main`. STAG dùng cùng app `tne5-dev-iam`.
+- KC v2 (cũ): `tnv/keycloak` (53) — host `iam-dev`, realm `tnv`, cho cms/quantri + tnv-service DEV.
+- Pipes (cdc, user-migration, webhook): `tne5/backend/v5` (115). Vector `sync` ≠ CDC — xem `catalog/products/kc-identity.yaml`.
 
 ## Ghi chú / cần lưu ý
 
 - `app_danh_may` (125) — group tồn tại nhưng **0 project**; source LachCach thực nằm ở `typing-game` (147).
-- `tne6` (193, 9 projects) — group riêng, **không nhầm với V6/tnmath**; chưa thuộc scope 6 sản phẩm, hỏi user nếu cần.
+- `tne6` (193, 9 projects) — group riêng, **không nhầm với V6/tnmath**; chưa thuộc catalog hiện tại, hỏi user nếu cần.
 - `crm` (160, top-level, 1 project) — khác `bancn/crm` (172); xác nhận trước khi map.
 - `tnv-mobile-web` (112), `games` (91), `shared` (86) — ngoài scope hiện tại.
 - Không đoán project id; luôn `get_project` / `list_group_projects` theo path để verify trước khi thao tác.

@@ -23,7 +23,7 @@ description: Traces production/support incidents across TNE products using Platf
 
 ## Heuristics
 
-- **Liên sản phẩm:** lỗi login/user toàn hệ → **KC trung tâm (IAM tne5)** + 2 service `cdc`/`sync` (V5); login riêng cms/quantri → **KC v2** (`tnv/keycloak`); session V2 hỏng → **Redis**; thiếu trường/huyện/tỉnh → REST **V5 master data**.
+- **Liên sản phẩm:** lỗi login/profile toàn hệ → **IAM tne5** + webhook **api** (`POST /external/users/sync`) + **cdc** (Mongo→IAM). Thiếu user trên ES → Vector **`sync`** (Kafka `user_info`). Login cms/quantri hoặc tnv-service **DEV** → **KC v2** (`tnv/keycloak`). Federation local miss → `/user-migration`. Victoria Logs có thể trống với tne5-dev iam/api. `cdc_logs SUCCESS` ≠ user V5. Session V2 hỏng → **Redis**; thiếu trường/huyện/tỉnh → REST **V5 master data**. Yugabyte `user` ≠ PG Keycloak — xem `catalog/products/kc-identity.yaml`.
 - **V2 stack:** nghẽn/mất bài khi thi online tải lớn (~500k CCU) → **Kafka** lag + `consumer`/`consumer-sync-data`; task background trễ → **RabbitMQ**; lỗi file/upload → **MinIO**; DB chính = **MongoDB**.
 - **Timeout app→app** (tnv/bcn) → check HAProxy `192.168.60.6` map (domain thiếu = silent-drop).
 - **PROD v2/bcn** ở repo manifest CŨ (`tnv-argocd-manifest` `tnv/prod`, `bcn-argocd-manifest` `bcn/prod`).

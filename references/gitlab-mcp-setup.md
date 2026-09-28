@@ -36,6 +36,8 @@ Không cấp Merge / Push / sudo / api.
 1. Settings → MCP → `gitlab-tne` xanh  
 2. `health_check` → authenticated true  
 3. `whoami`  
-4. `list_namespaces`
+4. `list_namespaces` / `list_projects`
+
+Agent gọi `health_check` và `list_projects` ngay, không hỏi user (không thuộc confirm-before-write).
 
 403 `insufficient_granular_scope`: bổ sung đúng quyền ghi trong error, không nới write.

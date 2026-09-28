@@ -23,6 +23,9 @@ products:
     repos:
       - { repo: bancn/tne-chatbot, id: 122, branch: main }
     stack: "tne-chat, backend n8n"
+  VNMF:
+    see: catalog/products/vnmf.yaml
+    note: "Website vnmf.edu.vn — catalog riêng, không duplicate stack ở đây."
   Noibo:
     note: "= support_tnv2. Deploy CHUNG env tnv (namespace/infra V2)."
     repos:

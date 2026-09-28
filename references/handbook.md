@@ -35,7 +35,7 @@ Sổ tay quy trình cho 4 nhóm task: **Review code / MR**, **Debug lỗi**, **D
 - **Cross-product (đặc thù TNE):**
   - Sửa FE `exam-page` (V2) hay `v5` (V5) → ảnh hưởng parity layout + link điều hướng chéo domain bên kia.
   - Sửa schema **master data V5** (trường/huyện/tỉnh) → ảnh hưởng consumer V2/V6 qua REST.
-  - Đụng `cdc`/`sync` (V5) hoặc realm KC → ảnh hưởng đồng bộ/đăng nhập toàn hệ.
+  - Đụng webhook **api** (`/external/users/sync`, `/user-migration`) / **cdc** / realm KC → ảnh hưởng đăng nhập/profile. App Vector **`sync`** chỉ ES search — không gộp với CDC.
   - Monorepo `tnv2-learn-exam-v2`: 1 thay đổi build nhiều image → nêu image nào bị ảnh hưởng.
 - **Ops/config:** đổi image tag phải sửa `.argocd-source-*` đúng ENV; đừng tưởng `values.yaml` là tag chạy.
 
@@ -63,7 +63,8 @@ Sổ tay quy trình cho 4 nhóm task: **Review code / MR**, **Debug lỗi**, **D
 7. Đối chiếu image tag ↔ commit GitLab (MR gần nhất). Nếu clone local có sẵn → đọc code.
 
 **Heuristic khoanh nhanh (TNE):**
-- Login/user lệch toàn hệ → **KC trung tâm (IAM tne5)** + service `cdc`/`sync` (V5). Login riêng cms/quantri → **KC v2** (`tnv/keycloak`).
+- Login/profile lệch toàn hệ → **IAM tne5** + webhook **api** (`POST /external/users/sync`) + **cdc** (Mongo→IAM). Thiếu user trên Elasticsearch → Vector **`sync`** (`user_info`→ES). Login riêng cms/quantri hoặc tnv-service **DEV** → **KC v2** (`tnv/keycloak`, host `iam-dev`). Federation local miss → `/user-migration` trên api. Victoria Logs có thể trống với tne5-dev iam/api — không kết luận từ log rỗng.
+- Yugabyte `user` = profile V5, **không** phải DB Keycloak (`keycloak_dev` @ `.80.35`). `cdc_logs SUCCESS` ≠ user đã có trên V5.
 - Session V2 hỏng → **Redis**. Thiếu dữ liệu trường/huyện/tỉnh → REST **V5 master data**.
 - V2 thi online tải lớn (~500k CCU) nghẽn/mất bài → **Kafka** lag + `consumer`/`consumer-sync-data`. Task background trễ → **RabbitMQ**. Lỗi file/upload → **MinIO**. DB chính = **MongoDB**.
 - V6 realtime/loadtest timeout → EMQX/MQTT + `runbooks/tnmath-preuat-loadtest-timeout.md`.
@@ -94,7 +95,7 @@ Sổ tay quy trình cho 4 nhóm task: **Review code / MR**, **Debug lỗi**, **D
 **Checklist trước khi coi là xong:**
 - Tôn trọng tech stack repo (Node/Nest/Python/Laravel/FE framework tương ứng — xem catalog/systems-overview).
 - Không hardcode secret; dùng cơ chế config/Vault của hệ.
-- Đụng master data V5 / KC / cdc-sync → ghi rõ tác động chéo.
+- Đụng master data V5 / KC / webhook api / cdc → ghi rõ tác động chéo. Vector `sync` = ES only.
 - Đổi API dùng chung → cân nhắc consumer (V2/V6 ↔ V5).
 - Migration DB có script rollback.
 

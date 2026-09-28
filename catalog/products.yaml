@@ -1,5 +1,5 @@
 # Index of products. Details in catalog/products/<slug>.yaml
-# 6 nhóm: 5 sản phẩm hệ thống chính + BCN Inhouse (nhánh phát triển riêng của team).
+# 7 file: 5 sản phẩm hệ thống chính + KC + BCN Inhouse + VNMF (in-house, catalog riêng).
 
 products:
   - slug: v2-thi
@@ -33,6 +33,12 @@ products:
     architecture: mixed
     verified: true
     in_house: true
+  - slug: vnmf
+    name: VNMF — website vnmf.edu.vn
+    file: products/vnmf.yaml
+    architecture: frontend-cms
+    verified: true
+    in_house: true
 
 # Quy ước tên (nguồn: devops/tnv/tnv-troubleshoot-helper/CLAUDE.md)
 naming:
@@ -40,13 +46,17 @@ naming:
   tne5: v5     # trang chủ trangnguyen.edu.vn (HUB) — outsource
   tnmath: v6   # outsource
   bcn: inhouse # BCN tự phát triển
+  vnmf: vnmf   # website vnmf.edu.vn — in-house BCN, catalog riêng (không phải HUB V5)
   lachcach: lachcach  # outsource
 
 # Quan hệ hệ thống:
 # - v5 (tne5) là HUB trang chủ trangnguyen.edu.vn → điều hướng sang v6 (tnmath) và v2 (tnv).
 # - IAM trung tâm = tne5 (v5-identity, host iam.dev-v3, realm tnv-main); v6 + phần lớn v2/v5 auth vào đây.
-# - KC v2 (cũ) = tnv/keycloak (host iam-dev, realm tnv) cho một số app cms/quantri; đang migrate user sang IAM tne5.
+# - KC v2 (cũ) = tnv/keycloak (host iam-dev, realm tnv) cho tnv-service DEV + cms/quantri; federation lazy còn JAR trên IAM.
+# - 4 ống user (không gộp): webhook api (IAM→Yugabyte profile V5→Mongo) ≠ CDC (Mongo→IAM) ≠ Vector sync (Kafka user_info→ES) ≠ federation (IAM local miss→Yugabyte+/user-migration).
+# - Yugabyte bảng user = profile V5 — KHÔNG phải DB Keycloak (keycloak_dev @ .80.35). Chi tiết: catalog/products/kc-identity.yaml.
 # - v5 = master data (trường/huyện/tỉnh) cấp REST cho các V khác.
+# - VNMF = website BCN `vnmf.edu.vn` (Next.js + Strapi) — không phải HUB V5; chi tiết catalog/products/vnmf.yaml.
 
 shared:
   gitlab_host: https://git.trangnguyen.edu.vn

@@ -246,10 +246,9 @@ infra:
   sentry: "sentry.trangnguyen.edu.vn — tnv-service=proj4, tnv2-learn-exam=3, tnv2-learn-exam-v2=13"
 
 iam:
-  central: "IAM tne5 (v5-identity), host iam.dev-v3, realm tnv-main — phần lớn v2 auth vào đây"
-  kc_v2_old: "tnv/keycloak, host iam-dev, realm tnv, DB keycloak_dev2@192.168.60.25:9999 — cms/quantri; đang migrate sang IAM tne5"
-
-# Đồng bộ user V2 ↔ V5 ↔ KC qua 2 service cdc/sync nằm trong V5.
+  central: "IAM tne5 (v5-identity), host iam.dev-v3, realm tnv-main — form STAG + tnv-service staging auth vào đây. Không có app IAM STAG riêng (dùng tne5-dev-iam)."
+  kc_v2_old: "tnv/keycloak, host iam-dev, realm tnv, DB keycloak_dev2@192.168.60.25:9999 — tnv-service DEV + cms/quantri"
+  user_pipes: "4 ống tách (webhook api ≠ CDC ≠ Vector sync ≠ federation) — catalog/products/kc-identity.yaml. Mongo tnv_staging.users = hồ sơ V2; CDC bỏ qua source:new."
 
 ops_docs:
   repo: devops/tnv/tnv-troubleshoot-helper

@@ -1,0 +1,136 @@
+slug: vnmf
+name: VNMF — website vnmf.edu.vn
+aliases: [vnmf.edu.vn]
+verified: true
+architecture: frontend-cms   # Next.js + Strapi, chung hostname, tách path
+origin: in-house
+family: bcn
+note: "Ý nghĩa chữ VNMF: ops TODO — không bịa expansion. Không phải HUB V5."
+
+techstack:
+  source: devops/tnv/tnv-troubleshoot-helper
+  overview: systems/bcn/OVERVIEW.md
+  snapshot: "ops 2026-08-24 · package.json GitLab 2026-09-11"
+  scope: "2 app group bancn/vnmf: FE Next.js + CMS Strapi, cùng host khác path."
+
+traffic:
+  note: "2 HTTPRoute cùng hostname, khác path. PathPrefix / của FE vẫn khớp mọi URL — Gateway phải ưu tiên path CMS dài hơn."
+  lb: "HAProxy 192.168.60.6 (TLS + CORS; cert_vnmf, zone vnmf.edu.vn)"
+  gateway: "Gateway default :8012 (rke2-traefik, cluster-dev-tnv)"
+  fe_calls_cms: "ops TODO — suy đoán FE gọi CMS qua host public /api (không confirm)"
+  domains:
+    DEV:
+      host: dev.vnmf.edu.vn
+      whitelist: wl_internal
+    STAG: null
+    PROD:
+      host: vnmf.edu.vn
+
+gitlab:
+  source_group: bancn/vnmf   # id 217
+  default_branch: develop
+  components:
+    - app: vnmf-frontend
+      kind: FE
+      repo: bancn/vnmf/vnmf-frontend
+      id: 114
+      image: bancn/vnmf/vnmf-frontend
+      lang: TypeScript
+      framework: "Next.js 15.5.18 + React 19 + Tailwind"
+      port: 3000
+      health: GET /
+      host_dev: dev.vnmf.edu.vn
+      host_prod: vnmf.edu.vn
+      httproute_paths: ["/"]
+      argocd_app_dev: bcn-dev-vnmf-frontend
+      workload: vnmf-frontend
+      replicas_dev: 1
+      replicas_prod: 2
+      external_secrets: false
+      note: "Không env runtime. Probe liveness/readiness/startup GET / :3000."
+    - app: vnmf-cms-landing
+      kind: CMS
+      repo: bancn/vnmf/vnmf-cms-landing
+      id: 113
+      image: bancn/vnmf/vnmf-cms-landing
+      lang: TypeScript
+      framework: "Strapi 5.17.0"
+      port: 1337
+      health: GET /admin
+      host_dev: "dev.vnmf.edu.vn /admin"
+      host_prod: "vnmf.edu.vn /admin"
+      httproute_paths:
+        - /admin
+        - /api
+        - /content-manager
+        - /i18n
+        - /upload
+        - /uploads
+        - /content-type-builder
+        - /auth
+        - /users-permissions
+      argocd_app_dev: bcn-dev-vnmf-cms-landing
+      workload: vnmf-cms-landing
+      replicas_dev: 1
+      replicas_prod: 5
+      pvc: "vnmf-cms-landing-pvc (nfs-client, 1Gi) → /opt/app/public/uploads — media không nằm trong image"
+      db: "DATABASE_CLIENT default sqlite trong code; driver pg + better-sqlite3. Runtime = Vault — TODO (không chọn sqlite/postgres)."
+      vault_dev: "KV bcn path dev/vnmf-cms-landing/envs → ExternalSecret → Secret vnmf-cms-landing-dev-app-secrets"
+      vault_prod_old: "/projects/bancn/vnmf-cms-landing/prod (store cũ trên repo manifest)"
+      note: "Startup probe ~5 phút (Strapi build admin lần đầu). PVC cụm mới có thể trống sau migrate."
+  gitops:
+    DEV:
+      id: 164
+      path: devops/tnv/bcn-argocd-config
+      branch: dev
+      values: values-dev.yaml
+      tag_truth:
+        - vnmf-frontend/.argocd-source-bcn-dev-vnmf-frontend.yaml
+        - vnmf-cms-landing/.argocd-source-bcn-dev-vnmf-cms-landing.yaml
+      note: "Tag pin trong values-dev.yaml KHÔNG phải tag chạy thật."
+    PROD:
+      id: 74
+      path: devops/bcn-argocd-manifest
+      branch: bcn/prod
+      namespace_pattern: "bcn-<app>-prod"
+      cluster: "10.0.0.20:6443"
+      tag_truth:
+        - services/vnmf-frontend/chart/.argocd-source-bcn-vnmf-frontend-prod.yaml
+      note: "Chưa migrate sang bcn-argocd-config. Values cũ có secret plaintext — chỉ đọc, không copy."
+    STAG: null
+
+platform:
+  DEV:
+    project_id: 2
+    name: bcn
+    namespace: bcn-dev
+    argocd_project: bcn-dev
+    note: "chung cụm cluster-dev-tnv. Overview Platform hiện CHỈ bcn-dev-crm2 — argocd_get_app bcn-dev-vnmf-* = access denied. Trace VNMF qua GitOps + ops docs, không giả sử Platform thấy app."
+  STAG: null
+  PROD: null   # GitOps cũ, chưa onboard Platform
+
+infra:
+  vault_kv: bcn
+  cluster_dev: cluster-dev-tnv
+
+gotchas:
+  - "2 HTTPRoute cùng host: / → FE; /admin /api /uploads… → CMS."
+  - "cert_vnmf (không dùng wildcard trangnguyen.edu.vn)."
+  - "app→app / FE→CMS đi HAProxy public 192.168.60.6 — domain thiếu map = silent-drop."
+  - "Uploads trên PVC, không trong image."
+  - "Strapi boot chậm — pod lâu Ready lúc sync mới là bình thường."
+  - "Không gộp với V5 HUB trangnguyen.edu.vn."
+
+ops_docs:
+  repo: devops/tnv/tnv-troubleshoot-helper
+  overview: systems/bcn/OVERVIEW.md
+  domains: systems/bcn/domains/_domains-bcn-dev.md
+  services:
+    - systems/bcn/services/vnmf-frontend.md
+    - systems/bcn/services/vnmf-cms-landing.md
+
+apps_sample:
+  - bcn-dev-vnmf-frontend    # Platform có thể không list
+  - bcn-dev-vnmf-cms-landing
+
+local_clone_placeholder: C:\TungVu\OnlineStorage\OneDrive - Cong ty TNHH Dau tu Giao duc Trang Nguyen\source_code\vnmf

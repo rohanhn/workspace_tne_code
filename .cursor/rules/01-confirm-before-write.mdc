@@ -9,9 +9,10 @@ alwaysApply: true
 
 Không hỏi “có được query GitLab/Platform/Planka không?”. Gọi tool GET/LIST/SEARCH/DETAIL ngay khi cần kết quả:
 
-- GitLab MCP ws: `health_check`, `whoami`, `list_*`, `get_*`, diffs, notes đọc, pipeline/job đọc, `get_file_contents`, `get_repository_tree`
+- GitLab MCP ws: `health_check`, `list_projects`, `whoami`, `list_*`, `get_*`, diffs, notes đọc, pipeline/job đọc, `get_file_contents`, `get_repository_tree`. **`health_check` và `list_projects` gọi ngay, không hỏi** — không thuộc confirm-before-write.
 - Platform: `platform_list_projects`, `platform_get_project_overview`, `argocd_get_app*` (metadata/config/resources/metrics/tuning — **không** gồm `argocd_query_app_logs`), `gitlab_get_*` / `gitlab_list_*` / `gitlab_query_pipeline_log`, Grafana/Sentry/metrics đọc, Planka `list` / `get` / `search`
 - Catalog + clone local: đọc file không hỏi
+- Daily report (rule `04`): GitLab/Platform đọc + ghi stamp `.cursor/hooks/state/daily-commit-report.date` + script parse tạm — **standing grant**, không hỏi
 
 **Loại trừ (không gọi ngay):** `argocd_query_app_logs` — chỉ sau `request_log_access` đã confirm + user đã grant (rule `02`).
 

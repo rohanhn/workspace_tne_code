@@ -6,7 +6,7 @@ architecture: shared-identity
 
 techstack:
   source: devops/tnv/tnv-troubleshoot-helper
-  snapshot: "iam 2026-08-26 · tnv keycloak 2026-08-24"
+  snapshot: "iam 2026-09-07 · tnv keycloak 2026-08-24 · user pipes 2026-09-07"
   note: "CÓ 2 KEYCLOAK — luôn phân biệt theo HOST, không nhầm iam-dev (tnv) với iam.dev-v3 (tne5)."
 
 # CÓ 2 KEYCLOAK — luôn phân biệt theo HOST, không nhầm.
@@ -27,14 +27,16 @@ keycloaks:
     realm: [tnv-main, tne-main, tnv-noi-bo, tnv-quantri, tnmath-admin]
     db: "keycloak_dev @ 192.168.80.35:30432 (CNPG cụm cũ) — KHÁC keycloak_dev2 của tnv"
     bcrypt: false
+    live_image_tag: "dev-2026-08-28_09-17-27-5b58c679"  # Platform 2026-09-07
+    host_aliases: "api.stag-v3.trangnguyen.edu.vn → 192.168.60.6 (webhook không phụ thuộc DNS public)"
     providers:
-      - "keycloak-rest-provider (danielfrak user-migration + AdminUserCreationInterceptor webhook)"
-      - "keycloak-events phasetwo"
-      - "tna-identity.jar theme login"
-    migration: "đang migrate user tnv sang đây (lazy migration; webhook lỗi → user KHÔNG được tạo)"
+      - "keycloak-rest-provider-6.0.4 (danielfrak: LegacyProvider federation + AdminUserCreationInterceptor webhook get-user-number)"
+      - "keycloak-events-0.39 phasetwo (USER-CREATE/UPDATE → POST /external/users/sync)"
+      - "tna-identity.jar theme login/register (Keycloakify)"
+    migration: "lazy federation vẫn gắn JAR; webhook get-user-number lỗi → user admin KHÔNG được tạo. R1 (local miss / login) chưa đo được — Victoria Logs tne5-dev iam/api trống 2026-09-07."
     ops_doc: systems/tne5/services/iam.md
   legacy_v2:
-    role: "KC v2 (cũ) — một số app cms/quantri của tnv"
+    role: "KC v2 (cũ) — tnv-service DEV + một số app cms/quantri"
     image: tnv/keycloak                 # id 53, branch master
     app: keycloak                        # ArgoCD tnv-dev-keycloak; operator sinh StatefulSet
     framework: Keycloak 26.7.1
@@ -43,29 +45,72 @@ keycloaks:
     host: iam-dev
     realm: tnv
     db: "keycloak_dev2 @ 192.168.60.25:9999 (PG shared tnv) — không phải keycloak_dev của iam tne5"
-    note: "ĐỪNG nhầm iam-dev (tnv) với deployment iam-dev của tne5 (host iam.dev-v3)."
+    note: "ĐỪNG nhầm iam-dev (tnv) với deployment iam-dev của tne5 (host iam.dev-v3). STAG tnv-service auth IAM tne5 (tnv-main), không host này."
     ops_doc: systems/tnv/services/keycloak.md
 
-user_sync:
-  services: [cdc, sync]     # nằm trong V5 (tne5)
-  note: "Đồng bộ user V2 ↔ V5 ↔ KC. Trace lỗi login/user lệch → kiểm cdc/sync trước."
+# Ba kho tách — Yugabyte KHÔNG phải DB Keycloak
+stores:
+  iam_local:
+    engine: "PostgreSQL keycloak_dev @ 192.168.80.35:30432"
+    holds: "identity (username, password hash, token) + copy attribute form đăng ký"
+  v5_profile:
+    engine: "Yugabyte trangnguyen_dev @ 192.168.80.39:5433 bảng user"
+    holds: "profile V5 — user.id UUID PK, keycloak_user_id, idv0; FK trường/lớp V5"
+  v2_mongo:
+    engine: "Mongo tnv_staging.users @ 192.168.60.21-24"
+    holds: "hồ sơ V2; CDC bỏ qua doc source: 'new' (do V5 ghi)"
+
+# Bốn ống — KHÔNG gộp Vector sync với identity
+pipes:
+  webhook_iam_to_v5:
+    who: "api (BullMQ SYNC_KC_USER_QUEUE) — không phải app ArgoCD sync"
+    direction: "IAM tnv-main → Yugabyte user → Mongo source:new → Kafka user_info"
+    trigger: "phasetwo POST /external/users/sync (ký x-keycloak-signature)"
+    code: "tne5/backend/v5 src/domains/external/external.service.ts handleSyncUser, src/infra/jobs/kc.ts handleKcEvents"
+    ops_doc: systems/tne5/services/api.md
+  cdc_mongo_to_iam:
+    who: "cdc-dev (chung image tne5/backend/v5)"
+    direction: "Mongo users (source != new) → Admin API updateUser IAM; không insert Yugabyte nếu KC OK"
+    note: "cdc_logs SUCCESS ≠ user đã có trên V5. Fallback: insert Yugabyte + Kafka khi ghi KC lỗi."
+    code: "src/cdc/index.ts handleUserChange, syncUserV0ToKc"
+    ops_doc: systems/tne5/services/cdc.md
+  vector_sync_to_es:
+    who: "sync-dev (timberio/vector) — KHÔNG đụng IAM/Mongo"
+    direction: "Kafka topic user_info → Elasticsearch index search"
+    ops_doc: systems/tne5/services/sync.md
+  federation_login:
+    who: "LegacyProvider trên IAM + api /user-migration"
+    direction: "IAM local miss → GET /user-migration/:username (Yugabyte) → POST verify password qua KEYCLOAK_BASE_URL (KC cũ) → import tnv-main"
+    note: "Form STAG vẫn là iam.dev-v3; federation là bước trong IAM khi local miss. GET miss Yugabyte = không gọi KC cũ. V5 POST /login vẫn password-grant KEYCLOAK_BASE_URL (đường khác, không phải federation)."
+    code: "src/domains/user-migration/"
+
+federation:
+  jar: keycloak-rest-provider-6.0.4.jar
+  armed: true          # còn trong image 2026-08-28; chưa có bằng chứng đã tắt trên realm
+  r1_measured: false   # Victoria Logs không ingest tne5-dev iam/api (2026-09-07)
+  get_user_number: "POST /user-migration/get-user-number — AdminUserCreationInterceptor; lỗi → không tạo user admin"
 
 gitlab:
   source_repos:
     - { repo: tnv/keycloak, id: 53, branch: master, role: "KC v2 legacy" }
-    - { repo: tne5/frontend/v5-identity, id: 128, branch: master, role: "IAM trung tâm (custom Keycloak image)" }
+    - { repo: tne5/frontend/v5-identity, id: 128, branch: master, role: "IAM trung tâm (custom Keycloak image + theme)" }
+    - { repo: tne5/backend/v5, id: 115, branch: main, role: "cdc + user-migration + webhook /external/users/sync" }
   gitops: null   # deploy kèm hệ tnv (keycloak) và tne5 (iam)
 
 platform:
-  DEV: null   # chưa có app riêng trên Platform; xử lý như identity dùng chung
-  STAG: null
+  DEV: null   # IAM chạy trong project tne5-dev (id 8) app tne5-dev-iam, không có platform project riêng
+  STAG: null  # không có app IAM STAG; V2/V5 staging auth tne5-dev-iam (host iam.dev-v3)
   PROD: null
 
 ops_docs:
   repo: devops/tnv/tnv-troubleshoot-helper
   overview:
     - systems/tne5/services/iam.md
+    - systems/tne5/services/cdc.md
+    - systems/tne5/services/sync.md
+    - systems/tne5/services/api.md
     - systems/tnv/services/keycloak.md
   v6_usage: systems/tnmath/infra/keycloak-iam.md
 
 local_clone_placeholder: C:\TungVu\OnlineStorage\OneDrive - Cong ty TNHH Dau tu Giao duc Trang Nguyen\source_code\kc-identity
+# backend pipes: ...\source_code\tne5\backend (repo tne5/backend/v5)
