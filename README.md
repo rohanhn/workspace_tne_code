@@ -16,6 +16,18 @@ Không dán PAT vào README, catalog, hay tin nhắn chat.
 
 Nếu `~/.cursor/mcp.json` còn server `gitlab-tne` cũ (lẫn `type: http` + `command`), xóa hoặc tắt block đó để tránh hai server trùng tên.
 
+## Dùng với Claude Code
+
+Cấu hình Claude chạy song song với Cursor, dùng chung `catalog/` và `references/`. Xem [`CLAUDE.md`](CLAUDE.md).
+
+1. Đặt hai biến môi trường user (Windows), rồi mở lại Claude:
+   - `GITLAB_TNE_PAT` — PAT chỉ Read (như mục trên).
+   - `PLATFORM_MCP_TOKEN` — token Platform MCP, không kèm tiền tố `Bearer `.
+2. Mở repo trong Claude Code, chấp nhận hai server `gitlab-tne` và `platform-system` từ `.mcp.json`, và duyệt hook trong `.claude/settings.json`.
+3. Chat: “test GitLab MCP: health_check rồi whoami”.
+
+Token không bao giờ nằm trong `.mcp.json`; file này commit được.
+
 ## Cấu trúc
 
 - `.cursor/rules/` — guard môi trường, confirm trước khi ghi
@@ -23,3 +35,4 @@ Nếu `~/.cursor/mcp.json` còn server `gitlab-tne` cũ (lẫn `type: http` + `c
 - `catalog/` — map sản phẩm ↔ GitLab ↔ Platform/ArgoCD
 - `workspaces/` — file `.code-workspace` multi-root
 - `references/` — hướng dẫn MCP, group GitLab
+- `CLAUDE.md`, `.claude/` (rules, skills, hooks, settings), `.mcp.json` — bản tương đương cho Claude Code

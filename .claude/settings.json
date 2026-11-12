@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "mcp__gitlab-tne__health_check",
+      "mcp__gitlab-tne__whoami",
+      "mcp__gitlab-tne__list_*",
+      "mcp__gitlab-tne__get_*",
+      "mcp__gitlab-tne__search_*",
+      "mcp__platform-system__platform_list_projects",
+      "mcp__platform-system__platform_get_project_overview",
+      "mcp__platform-system__argocd_get_app*",
+      "mcp__platform-system__gitlab_get_*",
+      "mcp__platform-system__gitlab_list_*",
+      "mcp__platform-system__gitlab_query_pipeline_log",
+      "mcp__platform-system__planka_list_*",
+      "mcp__platform-system__planka_get_*",
+      "mcp__platform-system__planka_search_*"
+    ],
+    "ask": [
+      "mcp__platform-system__argocd_query_app_logs",
+      "mcp__platform-system__request_log_access",
+      "mcp__platform-system__request_restart_app_deployment",
+      "mcp__platform-system__execute_restart_app_deployment"
+    ],
+    "deny": [
+      "mcp__gitlab-tne__merge_merge_request",
+      "mcp__gitlab-tne__approve_merge_request",
+      "mcp__gitlab-tne__unapprove_merge_request",
+      "mcp__gitlab-tne__create_merge_request",
+      "mcp__gitlab-tne__update_merge_request",
+      "mcp__gitlab-tne__create_note",
+      "mcp__gitlab-tne__create_merge_request_note",
+      "mcp__gitlab-tne__create_merge_request_thread",
+      "mcp__gitlab-tne__create_branch",
+      "mcp__gitlab-tne__push_files",
+      "mcp__gitlab-tne__create_or_update_file",
+      "Read(./.cursor/mcp.json)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__platform-system__.*restart.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$CLAUDE_PROJECT_DIR/.claude/hooks/prod-guard.ps1\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$CLAUDE_PROJECT_DIR/.claude/hooks/daily-commit-report.ps1\"",
+            "timeout": 45
+          }
+        ]
+      }
+    ]
+  }
+}

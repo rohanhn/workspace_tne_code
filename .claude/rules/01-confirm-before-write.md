@@ -1,0 +1,31 @@
+# Confirm before write
+
+## Read: gọi ngay
+
+Không hỏi “có được query GitLab/Platform/Planka không?”. Gọi tool GET/LIST/SEARCH/DETAIL ngay khi cần kết quả:
+
+- GitLab (`mcp__gitlab-tne__*`): `health_check`, `list_projects`, `whoami`, `list_*`, `get_*`, diffs, notes đọc, pipeline/job đọc, `get_file_contents`, `get_repository_tree`. **`health_check` và `list_projects` gọi ngay, không hỏi.**
+- Platform (`mcp__platform-system__*`): `platform_list_projects`, `platform_get_project_overview`, `argocd_get_app*` (metadata/config/resources/metrics/tuning — **không** gồm `argocd_query_app_logs`), `gitlab_get_*` / `gitlab_list_*` / `gitlab_query_pipeline_log`, Grafana/Sentry/metrics đọc, Planka `list` / `get` / `search`.
+- Catalog + clone local: đọc file không hỏi.
+- Daily report (rule `04`): GitLab/Platform đọc + ghi stamp + script parse tạm — **standing grant**, không hỏi.
+
+**Loại trừ (không gọi ngay):** `argocd_query_app_logs` — chỉ sau `request_log_access` đã confirm + user đã grant (rule `02`). `settings.json` đặt hai tool này ở chế độ `ask`.
+
+Thiếu ENV: vẫn GET overview như trên; gắn `ENV: UNKNOWN` và hỏi ENV. Không kết luận (rule `00`). Đó không phải xin phép MCP read.
+
+## Đề xuất sửa code
+
+Chỉ khi user **yêu cầu tường minh** (sửa, hotfix, implement, đề xuất fix). Trace/QA: không tự đưa patch/plan. Review MR khi user đã hỏi review: được nêu Critical/Suggestion trên diff đó — không tự implement.
+
+## Write: confirm tường minh
+
+Không thực hiện cho đến khi user xác nhận **tường minh** (tên resource + hành động):
+
+- GitLab: comment MR, approve, merge, tạo MR, tạo branch, push. Server chạy `GITLAB_READ_ONLY_MODE=true` và `settings.json` chặn các tool ghi; muốn ghi phải đổi cấu hình có chủ đích.
+- Platform DEV/STAG: `request_restart_app_deployment` (kể cả khi có approval URL); **`request_log_access`** (rồi mới đưa URL grant).
+- Planka: create/update/move/archive/assign.
+- Git local: push, force, amend đã push.
+
+**Không bao giờ** `merge_merge_request` trừ confirm từng IID.
+
+**Restart PROD: cấm tuyệt đối** — không confirm, không approval URL, không `request_restart_app_deployment` / `execute_restart_app_deployment`.
