@@ -28,6 +28,10 @@ Khi `references/` hoặc `catalog/` nhắc tên server Cursor (`...-gitlab-tne-w
 
 ## Biến môi trường cần có
 
+Đặt trong `.claude/settings.local.json` → `env` (chỉ project này, gitignore). Claude bị chặn đọc `.cursor/mcp.json` nên không tự copy token; user tự điền.
+
+Server `gitlab-tne` (stdio) chạy qua `.claude/mcp/gitlab-launch.js`: Claude không thay `${...}` từ `settings.local.json` vào env của server stdio, nên launcher tự đọc `GITLAB_TNE_PAT` từ file đó. Server HTTP `platform-system` thì `${PLATFORM_MCP_TOKEN}` trong header vẫn được thay bình thường.
+
 - `GITLAB_TNE_PAT` — fine-grained PAT chỉ Read (xem `references/gitlab-mcp-setup.md`).
 - `PLATFORM_MCP_TOKEN` — token Platform MCP (không gồm tiền tố `Bearer `).
 

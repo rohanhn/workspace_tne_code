@@ -1,5 +1,6 @@
 # Secrets — never commit PAT or local MCP config
 .cursor/mcp.json
+.claude/settings.local.json
 .env
 .env.local
 *.pem

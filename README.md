@@ -20,9 +20,11 @@ Nếu `~/.cursor/mcp.json` còn server `gitlab-tne` cũ (lẫn `type: http` + `c
 
 Cấu hình Claude chạy song song với Cursor, dùng chung `catalog/` và `references/`. Xem [`CLAUDE.md`](CLAUDE.md).
 
-1. Đặt hai biến môi trường user (Windows), rồi mở lại Claude:
-   - `GITLAB_TNE_PAT` — PAT chỉ Read (như mục trên).
-   - `PLATFORM_MCP_TOKEN` — token Platform MCP, không kèm tiền tố `Bearer `.
+1. Đặt hai biến chỉ cho project này trong `.claude/settings.local.json` (đã gitignore), rồi mở lại Claude:
+   ```json
+   { "env": { "GITLAB_TNE_PAT": "<PAT chỉ Read>", "PLATFORM_MCP_TOKEN": "<token, không kèm Bearer>" } }
+   ```
+   Biến hệ thống Windows cùng tên cũng dùng được nhưng không cần.
 2. Mở repo trong Claude Code, chấp nhận hai server `gitlab-tne` và `platform-system` từ `.mcp.json`, và duyệt hook trong `.claude/settings.json`.
 3. Chat: “test GitLab MCP: health_check rồi whoami”.
 

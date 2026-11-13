@@ -1,13 +1,8 @@
 {
   "mcpServers": {
     "gitlab-tne": {
-      "command": "cmd",
-      "args": ["/c", "npx", "-y", "@zereight/mcp-gitlab"],
-      "env": {
-        "GITLAB_PERSONAL_ACCESS_TOKEN": "${GITLAB_TNE_PAT}",
-        "GITLAB_API_URL": "https://git.trangnguyen.edu.vn/api/v4",
-        "GITLAB_READ_ONLY_MODE": "true"
-      }
+      "command": "node",
+      "args": [".claude/mcp/gitlab-launch.js"]
     },
     "platform-system": {
       "type": "http",
