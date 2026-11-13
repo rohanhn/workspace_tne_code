@@ -9,7 +9,7 @@ Sổ tay quy trình cho 4 nhóm task: **Review code / MR**, **Debug lỗi**, **D
 - **MCP routing** (rule `02-mcp-routing.mdc`): runtime (pod/log/metric/sync) = `platform-system`; GitLab (MR/diff/file/pipeline) = server workspace `project-0-workspace_tne_code-gitlab-tne-ws`. KHÔNG dùng `user-gitlab-tne`.
 - **Catalog trước** (rule `03-multi-product.mdc`): đọc `catalog/products.yaml` → `catalog/products/<slug>.yaml`; tra ops chi tiết ở `references/systems-overview.md` + `references/naming-and-gotchas.md` + repo `devops/tnv/tnv-troubleshoot-helper`.
 - **Confirm before write** (rule `01-confirm-before-write.mdc`): GET/READ MCP (overview, diff, metrics, list/get) **gọi ngay, không hỏi** — **trừ** `argocd_query_app_logs`. Comment MR / approve / merge / tạo MR/branch / push / restart DEV-STAG / `request_log_access` / Planka write → chỉ làm khi user xác nhận **tường minh**. Restart PROD: cấm tuyệt đối.
-- **Gotcha thường trúng:** tag chạy thật ở `.argocd-source-*.yaml` (không phải `values.yaml`); ENV không suy từ namespace/branch; PROD v2/bcn ở repo manifest CŨ; app→app đi qua HAProxy `192.168.60.6` (domain thiếu map = silent-drop); IAM có 2 Keycloak phân biệt theo HOST; app ArgoCD ≠ tên repo (bảng mapping trong `naming-and-gotchas.md`).
+- **Gotcha thường trúng:** tag chạy thật ở `.argocd-source-*.yaml` (không phải `values.yaml`); ENV không suy từ namespace/branch; PROD trên Platform chạy `*-argocd-config` nhánh `prod`, app chưa lên Platform có thể còn ở repo manifest CŨ; app→app đi qua HAProxy `192.168.60.6` (domain thiếu map = silent-drop); IAM có 2 Keycloak phân biệt theo HOST; app ArgoCD ≠ tên repo (bảng mapping trong `naming-and-gotchas.md`).
 
 ---
 

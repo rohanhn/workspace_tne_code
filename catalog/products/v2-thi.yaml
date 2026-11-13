@@ -213,9 +213,17 @@ gitlab:
       branches: [dev, staging]
       note: "Gateway API + Vault ExternalSecret; cụm cluster-dev-tnv"
     prod:
+      id: 159
+      path: devops/tnv/tnv-argocd-config
+      branch: prod
+      values: values-prod.yaml
+      namespace: tnv-prod
+      verified: 2026-11-13   # argocd_get_app tnv-prod-hoc-thi-2
+      note: "15 app Platform tnv-prod chạy từ đây (path = tên app). Tag thật = .argocd-source-*.yaml, không phải values."
+    prod_legacy:
       path: tnv/devops/tnv-argocd-manifest
       branch: tnv/prod
-      note: "PROD chạy repo CŨ (44 app). Tag thật = tnv-services/<app>/.argocd-source-<app>-prod.yaml. KHÔNG dùng tnv-argocd-config cho prod."
+      note: "Repo CŨ (từng 44 app). App PROD chưa có trên Platform tnv-prod có thể vẫn chạy ở đây — chưa verify từng app. Tag = tnv-services/<app>/.argocd-source-<app>-prod.yaml."
     legacy_manifest:
       path: tnv/devops/tnv-argocd-manifest
       dead_branches: [tnv/dev, tnv/staging]
@@ -237,7 +245,18 @@ platform:
     name: tnv-staging
     namespace: tnv-staging
     argocd_project: tnv-staging
-  PROD: null   # chưa onboard Platform; chạy trên tnv-argocd-manifest nhánh tnv/prod
+  PROD:
+    project_id: 10
+    name: tnv-prod
+    namespace: tnv-prod
+    argocd_project: tnv-prod
+    read_only: true   # cấm restart/sync
+    apps: [api-cms-service, cms-admin, hoc-thi-2, khaosat-fe, landing-trang-nguyen, quantri-cms-admin, quantri-trang-nguyen-api, tnv-service, tnv2-learn-api-v2, tnv2-learn-exam, tnv2-learn-exam-api-v2, tnv2-learn-exam-consumer-sync-data-v2, tnv2-learn-exam-consumer-v2, tnv2-learn-exam-schedule-v2, tnv2-student-api-v2]   # prefix tnv-prod-
+    note: "2026-11-13: tnv2-learn-api-v2 + tnv2-student-api-v2 OutOfSync (Healthy). PROD không có hoc-thi cũ."
+  snapshot: "Platform 2026-11-13"
+  dev_apps_visible: [api-cms-service, cms-admin, hoc-thi, khaosat-fe, quantri-cms-admin, quantri-trang-nguyen-api, tnv-service, tnv2-learn-exam, tnv2-learn-exam-v2]   # overview tnv-dev; KHÔNG list hoc-thi-2 / *-api-v2
+  staging_apps_visible: [api-cms-service, cms-admin, hoc-thi, hoc-thi-2, khaosat-fe, landing-trang-nguyen, quantri-cms-admin, quantri-trang-nguyen-api, tnv-service, tnv2-learn-exam, tnv2-learn-exam-v2]
+  repo_ids: { tnv-service: 28, landing-trang-nguyen: 35, cms-trang-nguyen-api: 38, cms-admin: 39, quantri-trang-nguyen-api: 42, quantri-cms-admin: 43, khaosat-fe: 49, tnv2-learn-exam-v2: 52, exam-page: 64 }
 
 infra:
   cluster_dev: "cluster-dev-tnv (RKE2) master 192.168.60.141, worker .144-146"
@@ -257,9 +276,10 @@ ops_docs:
   services: systems/tnv/services/
 
 apps_sample:
-  - tnv-dev-hoc-thi-2
-  - tnv-dev-tnv2-learn-exam-api-v2
+  - tnv-dev-hoc-thi-2              # Platform overview không list (2026-11-13)
+  - tnv-dev-tnv2-learn-exam-api-v2 # Platform overview không list (2026-11-13)
   - tnv-staging-hoc-thi-2
+  - tnv-prod-hoc-thi-2
 
 # Clone folders (shared.clone_root + <group>-<repo>; git clone default có thể trùng tên → dùng tên có group)
 local_clone_placeholder: C:\TungVu\OnlineStorage\OneDrive - Cong ty TNHH Dau tu Giao duc Trang Nguyen\source_code\tnv2-learn-exam-v2   # BE monorepo (dev-feature BE)

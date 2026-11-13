@@ -45,22 +45,40 @@ gitlab:
       - { id: 74, path: devops/bcn-argocd-manifest }
       - { id: 164, path: devops/tnv/bcn-argocd-config }
     prod:
+      id: 164
+      path: devops/tnv/bcn-argocd-config
+      branch: prod
+      values: values-prod.yaml
+      namespace: bcn-prod
+      verified: 2026-11-13   # argocd_get_app bcn-prod-vnmf-frontend
+      note: "5 app Platform bcn-prod chạy từ đây, chung ns bcn-prod."
+    prod_legacy:
+      id: 74
       path: devops/bcn-argocd-manifest
       branch: bcn/prod
-      note: "PROD chạy repo cũ; mỗi app 1 ns bcn-<app>-prod, cluster 10.0.0.20:6443"
+      note: "Repo cũ; mỗi app 1 ns bcn-<app>-prod, cluster 10.0.0.20:6443. App PROD chưa lên Platform (CRM, chatbot, support_tnv2_api…) có thể vẫn ở đây — chưa verify."
 
 iam:
   note: "Một số app auth KC v2 (tnv/keycloak); phần khác dùng IAM tne5."
 
 platform:
   DEV:
-    project_id: 2
-    name: bcn
+    project_id: 12   # project cũ "bcn" id 2 không còn trong platform_list_projects (2026-11-13)
+    name: bcn-dev
     namespace: bcn-dev
     argocd_project: bcn-dev
+    apps: [bcn-tnv2-api, crm2, support-tnv2-cms, vnmf-cms-landing, vnmf-frontend]   # prefix bcn-dev-
     note: "chung cụm cluster-dev-tnv"
   STAG: null
-  PROD: null   # chạy trên bcn-argocd-manifest nhánh bcn/prod
+  PROD:
+    project_id: 11
+    name: bcn-prod
+    namespace: bcn-prod
+    argocd_project: bcn-prod
+    read_only: true   # cấm restart/sync
+    apps: [bcn-tnv2-api, crm2, support-tnv2-cms, vnmf-cms-landing, vnmf-frontend]   # prefix bcn-prod-
+  repo_ids: { support_tnv2_cms: 46, vnmf-cms-landing: 113, vnmf-frontend: 114, tnv2-api: 119, crm-v2: 165 }
+  snapshot: "Platform 2026-11-13"
 
 infra:
   vault_kv: bcn
@@ -71,5 +89,6 @@ ops_docs:
 
 apps_sample:
   - bcn-dev-crm2
+  - bcn-prod-crm2
 
 local_clone_placeholder: C:\TungVu\OnlineStorage\OneDrive - Cong ty TNHH Dau tu Giao duc Trang Nguyen\source_code\crm-v2

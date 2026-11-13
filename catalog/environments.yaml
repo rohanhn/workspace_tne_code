@@ -1,4 +1,5 @@
 # Canonical environment names. Agent must emit ENV: on every ops reply.
+# Platform projects verified 2026-11-13 (platform_list_projects + overview).
 
 environments:
   DEV:
@@ -12,10 +13,21 @@ environments:
     note: "Platform MCP currently labels staging as uat."
   PROD:
     aliases: [prod, production]
-    platform_env_label: null
+    platform_env_label: prod
     k8s_namespace_suffix: "-prod"
-    status: stub
-    note: "PROD not onboarded on Platform. Do not guess namespace or app names."
+    note: "Onboarded on Platform (tnv-prod id 10, bcn-prod id 11, tne5-prod id 13). READ ONLY — restart/sync/merge cấm tuyệt đối. tne5 PROD namespace = tn-prod (không theo suffix)."
+
+platform_projects:
+  - { id: 4,  name: tnv-dev,          env: DEV,  product: v2-thi }
+  - { id: 5,  name: tnv-staging,      env: STAG, product: v2-thi }
+  - { id: 10, name: tnv-prod,         env: PROD, product: v2-thi }
+  - { id: 8,  name: tne5-dev,         env: DEV,  product: v5-hoc }
+  - { id: 13, name: tne5-prod,        env: PROD, product: v5-hoc }
+  - { id: 12, name: bcn-dev,          env: DEV,  product: [bcn-inhouses, vnmf] }
+  - { id: 11, name: bcn-prod,         env: PROD, product: [bcn-inhouses, vnmf] }
+  - { id: 9,  name: lachcach-staging, env: STAG, product: lachcach }
+  # v6-tnmath: chưa có platform project.
 
 mismatch_warnings:
-  - "tnv-dev-hoc-thi-2 lives in namespace tnv-dev but image tag may be staging-*"
+  - "tnv-dev-hoc-thi-2 lives in namespace tnv-dev but image tag may be staging-* (Platform tnv-dev overview 2026-11-13 không list app này)"
+  - "tne5 DEV namespace = tne5-dev (trước 2026-11 ghi tn-dev); tne5 PROD namespace = tn-prod"

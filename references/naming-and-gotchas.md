@@ -56,9 +56,9 @@ Monorepo: `tnv/tnv2-learn-exam-v2` build nhiều image (`tnv-exam-api`, `tnv-lea
 - Cùng nhánh dev có image tag lệch tên ENV: `hoc-thi-2` tag `staging` (host `thi-stag-v3`); `keycloak-cluster` tag `prod`.
 - => KHÔNG suy ENV từ namespace/branch; đọc image tag thực trước khi kết luận.
 
-## Gotcha 4 — PROD chạy repo manifest CŨ
-- **v2 PROD**: `tnv/devops/tnv-argocd-manifest` nhánh `tnv/prod` (KHÔNG phải `tnv-argocd-config`, chỉ dev/staging).
-- **bcn PROD**: `devops/bcn-argocd-manifest` nhánh `bcn/prod`.
+## Gotcha 4 — PROD: repo config mới + repo manifest CŨ song song
+- Verify 2026-11-13: app PROD trên Platform (`tnv-prod`, `tne5-prod`, `bcn-prod`) chạy từ `devops/tnv/<tnv|tne5|bcn>-argocd-config` nhánh **`prod`**.
+- App PROD **chưa** lên Platform có thể vẫn ở repo cũ: v2 `tnv/devops/tnv-argocd-manifest` nhánh `tnv/prod`; bcn `devops/bcn-argocd-manifest` nhánh `bcn/prod`. Xem `source.repoUrl` của `argocd_get_app` trước khi kết luận.
 - `tnv/dev`,`tnv/staging` của manifest cũ = **đã chết** (chỉ tra env cũ; ConfigMap có secret plaintext — chỉ đọc).
 
 ## Gotcha 5 — Noibo = support_tnv2, chạy chung env tnv

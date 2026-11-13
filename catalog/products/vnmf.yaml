@@ -89,25 +89,38 @@ gitlab:
         - vnmf-cms-landing/.argocd-source-bcn-dev-vnmf-cms-landing.yaml
       note: "Tag pin trong values-dev.yaml KHÔNG phải tag chạy thật."
     PROD:
+      id: 164
+      path: devops/tnv/bcn-argocd-config
+      branch: prod
+      values: values-prod.yaml
+      namespace: bcn-prod
+      verified: 2026-11-13   # argocd_get_app bcn-prod-vnmf-frontend (2 pod)
+      tag_truth: "<app>/.argocd-source-bcn-prod-<app>.yaml (suy theo pattern DEV — chưa mở file)"
+      note: "Đã migrate sang bcn-argocd-config."
+    PROD_legacy:
       id: 74
       path: devops/bcn-argocd-manifest
       branch: bcn/prod
       namespace_pattern: "bcn-<app>-prod"
       cluster: "10.0.0.20:6443"
-      tag_truth:
-        - services/vnmf-frontend/chart/.argocd-source-bcn-vnmf-frontend-prod.yaml
-      note: "Chưa migrate sang bcn-argocd-config. Values cũ có secret plaintext — chỉ đọc, không copy."
+      note: "Nguồn PROD cũ trước migrate. Values cũ có secret plaintext — chỉ đọc, không copy."
     STAG: null
 
 platform:
   DEV:
-    project_id: 2
-    name: bcn
+    project_id: 12
+    name: bcn-dev
     namespace: bcn-dev
     argocd_project: bcn-dev
-    note: "chung cụm cluster-dev-tnv. Overview Platform hiện CHỈ bcn-dev-crm2 — argocd_get_app bcn-dev-vnmf-* = access denied. Trace VNMF qua GitOps + ops docs, không giả sử Platform thấy app."
+    note: "chung cụm cluster-dev-tnv. Từ 2026-11-13 Platform thấy bcn-dev-vnmf-frontend + bcn-dev-vnmf-cms-landing (argocd_get_app OK)."
   STAG: null
-  PROD: null   # GitOps cũ, chưa onboard Platform
+  PROD:
+    project_id: 11
+    name: bcn-prod
+    namespace: bcn-prod
+    argocd_project: bcn-prod
+    read_only: true
+    apps: [bcn-prod-vnmf-frontend, bcn-prod-vnmf-cms-landing]
 
 infra:
   vault_kv: bcn
@@ -130,7 +143,9 @@ ops_docs:
     - systems/bcn/services/vnmf-cms-landing.md
 
 apps_sample:
-  - bcn-dev-vnmf-frontend    # Platform có thể không list
+  - bcn-dev-vnmf-frontend
   - bcn-dev-vnmf-cms-landing
+  - bcn-prod-vnmf-frontend
+  - bcn-prod-vnmf-cms-landing
 
 local_clone_placeholder: C:\TungVu\OnlineStorage\OneDrive - Cong ty TNHH Dau tu Giao duc Trang Nguyen\source_code\vnmf

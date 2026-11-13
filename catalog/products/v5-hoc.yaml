@@ -60,7 +60,7 @@ gitlab:
       framework: Keycloak 26.2.3
       port: 8080
       management_port: 9000
-      dest_namespace: tne5-dev   # không phải tn-dev
+      dest_namespace: tne5-dev
       argocd_app: tne5-iam-dev
       workload: iam-dev
       host: iam.dev-v3
@@ -82,12 +82,23 @@ gitlab:
       note: "Vector: Kafka topic user_info → Elasticsearch (search only). KHÔNG đụng IAM/Mongo. Thiếu user trên ES → đây; lệch login/profile → webhook api + cdc, không app này."
   gitops:
     dev:
-      path: tne5/devops/tne5-argocd-manifest
-      values: values-dev.yaml
-      note: "nginx ingress; workload api/web/admin ns tn-dev; iam ns tne5-dev"
-    config:
       id: 166
       path: devops/tnv/tne5-argocd-config
+      branch: dev
+      values: values-dev.yaml
+      namespace: tne5-dev
+      verified: 2026-11-13   # argocd_get_app tne5-dev-api
+      note: "Cả 7 app DEV (kể cả iam) ở ns tne5-dev, path = tên app. Workload DEV có hậu tố -dev (vd Deployment api-dev)."
+    prod:
+      id: 166
+      path: devops/tnv/tne5-argocd-config
+      branch: prod
+      values: values-prod.yaml
+      namespace: tn-prod
+      verified: 2026-11-13   # argocd_get_app tne5-prod-api
+    legacy_manifest:
+      path: tne5/devops/tne5-argocd-manifest
+      note: "Repo cũ (nginx ingress, ns tn-dev). Không còn là nguồn của app Platform tne5-dev."
   common_chart: devops/common-chart   # fork bjw-s common 4.6.2
 
 master_data:
@@ -119,10 +130,19 @@ platform:
   DEV:
     project_id: 8
     name: tne5-dev
-    namespace: tn-dev
+    namespace: tne5-dev   # trước ghi tn-dev; Platform 2026-11-13 = tne5-dev
     argocd_project: tne5-dev
   STAG: null
-  PROD: null   # chưa tài liệu hóa
+  PROD:
+    project_id: 13
+    name: tne5-prod
+    namespace: tn-prod
+    argocd_project: tne5-prod
+    read_only: true   # cấm restart/sync
+    apps: [admin, api, cdc, web]   # prefix tne5-prod-; PROD KHÔNG có iam/pipe/sync trên Platform
+    repo_ids: { tne5/backend/v5: 115, tne5/frontend/v5: 116, tne5/frontend/admin-v5: 127 }
+    note: "tne5-prod-api 10 pod (2026-11-13)."
+  snapshot: "Platform 2026-11-13"
 
 ops_docs:
   repo: devops/tnv/tnv-troubleshoot-helper
@@ -137,5 +157,7 @@ apps_sample:
   - tne5-dev-cdc
   - tne5-dev-pipe
   - tne5-dev-sync
+  - tne5-prod-api
+  - tne5-prod-web
 
 local_clone_placeholder: C:\TungVu\OnlineStorage\OneDrive - Cong ty TNHH Dau tu Giao duc Trang Nguyen\source_code\tne5-frontend-v5

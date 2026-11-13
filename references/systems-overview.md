@@ -27,7 +27,7 @@ Nguồn chi tiết & luôn cập nhật: repo `devops/tnv/tnv-troubleshoot-helpe
 - Tech stack từng service (group `tnv` + `exam-page`): [`catalog/products/v2-thi.yaml`](../catalog/products/v2-thi.yaml) → `techstack` / `gitlab.monorepo` / `standalone_services` / `frontend_services`.
 
 ### v5 (tne5) — monolith · `systems/tne5/OVERVIEW.md`
-- ns `tn-dev` (api/web/admin) + `tne5-dev` (iam). BE `api` (Node.js :8000 monolith) + `cdc` (chung image `tne5/backend/v5`). Vector `pipe` / `sync` là image riêng, không phải identity.
+- DEV: cả 7 app ở ns `tne5-dev` (GitOps `devops/tnv/tne5-argocd-config` nhánh `dev`; trước đây api/web/admin ở `tn-dev`). PROD: ns `tn-prod`. BE `api` (Node.js :8000 monolith) + `cdc` (chung image `tne5/backend/v5`). Vector `pipe` / `sync` là image riêng, không phải identity.
 - DB: **YugabyteDB .80.39:5433** db `trangnguyen_dev` — bảng `user` = **profile V5** (`user.id` UUID, `keycloak_user_id`, `idv0`), **không** phải DB Keycloak. Redis Sentinel .80.39-40, Kafka .80.48-50, ES .80.45-47, ClickHouse .80.56, Mongo .60.21-24 (chung, hồ sơ V2).
 - Pipeline Vector: `pipe` (Kafka → ClickHouse, learning log), `sync` (Kafka topic `user_info` → ES search). Cụm cũ `.80.35` (Directus/Gotenberg/**PG IAM `keycloak_dev`**).
 - Webhook IAM→V5 chạy **trên api** (BullMQ), không trên app `sync`. Victoria Logs có thể trống với tne5-dev iam/api (đã thấy 2026-09-07) — không kết luận “zero federation” từ log rỗng.
@@ -41,13 +41,15 @@ Nguồn chi tiết & luôn cập nhật: repo `devops/tnv/tnv-troubleshoot-helpe
 
 ### bcn (in-house) · `systems/bcn/OVERVIEW.md`
 - Dev ns `bcn-dev` chung cụm `cluster-dev-tnv`. crm (Laravel, MySQL+Redis .60.33), crm2 (`erp/crm-v2`, FastAPI+SPA), chatbot (`tne-chat`, backend n8n). Vault KV `bcn`.
-- **VNMF** website `vnmf.edu.vn` (DEV `dev.vnmf.edu.vn`): Next.js + Strapi, **2 HTTPRoute cùng host** (`/` → frontend, `/admin /api /uploads…` → CMS), cert `cert_vnmf`. Catalog: [`vnmf.yaml`](../catalog/products/vnmf.yaml). Platform project `bcn` hiện không list app VNMF — trace qua GitOps + ops docs.
+- **VNMF** website `vnmf.edu.vn` (DEV `dev.vnmf.edu.vn`): Next.js + Strapi, **2 HTTPRoute cùng host** (`/` → frontend, `/admin /api /uploads…` → CMS), cert `cert_vnmf`. Catalog: [`vnmf.yaml`](../catalog/products/vnmf.yaml). Platform `bcn-dev` (id 12) / `bcn-prod` (id 11) list app VNMF từ 2026-11-13.
 - **Noibo = `support_tnv2`**: deploy trong env **tnv** (`support-tnv2-cms` host `noibo-stage`, `support-tnv2-api` host `noibo-api`), source group `bancn`.
 
 ### lachcach · `systems/lachcach/OVERVIEW.md`
 - OVERVIEW còn TODO (chưa tài liệu hóa đầy đủ). Deploy `lachcach-staging` chung cụm tnv; GitOps `devops/tnv/lachcach-argocd-config`.
 
 ## PROD GitOps (đọc kỹ trước khi trace PROD)
-- **v2 PROD** chạy repo CŨ `tnv/devops/tnv-argocd-manifest` nhánh **`tnv/prod`** (44 app). Tag thật = `tnv-services/<app>/.argocd-source-<app>-prod.yaml`. `devops/argocd/tnv-argocd-config-prod` (108) mới `Initial commit` → **chưa dùng**.
-- **bcn PROD** chạy repo cũ `devops/bcn-argocd-manifest` nhánh `bcn/prod` (mỗi app 1 ns `bcn-<app>-prod`, cluster `10.0.0.20:6443`).
+Verify 2026-11-13 (Platform + `argocd_get_app`). PROD đã lên Platform, **chỉ đọc** — cấm restart/sync.
+- **v2 PROD** (Platform `tnv-prod` id 10, ns `tnv-prod`, 15 app): `devops/tnv/tnv-argocd-config` nhánh **`prod`**, `values-prod.yaml`. App PROD chưa có trên Platform có thể vẫn ở repo cũ `tnv/devops/tnv-argocd-manifest` nhánh `tnv/prod` (tag `tnv-services/<app>/.argocd-source-<app>-prod.yaml`) — verify từng app.
+- **v5 PROD** (Platform `tne5-prod` id 13, ns **`tn-prod`**, app admin/api/cdc/web): `devops/tnv/tne5-argocd-config` nhánh `prod`.
+- **bcn PROD** (Platform `bcn-prod` id 11, ns `bcn-prod`, 5 app gồm VNMF): `devops/tnv/bcn-argocd-config` nhánh `prod`. App chưa lên Platform có thể vẫn ở `devops/bcn-argocd-manifest` nhánh `bcn/prod` (ns `bcn-<app>-prod`, cluster `10.0.0.20:6443`).
 - **Tag đang chạy thật = file `.argocd-source-*.yaml`**, KHÔNG phải tag pin trong `values.yaml` (mọi hệ).
