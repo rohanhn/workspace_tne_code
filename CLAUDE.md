@@ -23,7 +23,8 @@ Khi `references/` hoặc `catalog/` nhắc tên server Cursor (`...-gitlab-tne-w
 `.claude/settings.json`:
 - Tool đọc GitLab/Platform: cho phép sẵn.
 - `argocd_query_app_logs`, `request_log_access`, restart DEV/STAG: luôn hỏi.
-- Tool ghi GitLab (merge/approve/comment/push/tạo branch, MR): bị chặn.
+- Tool ghi GitLab (merge/approve/comment/push/tạo branch, MR) — cả `gitlab-tne` lẫn `platform-system` `gitlab_*`: bị chặn.
+- Platform `infra_delete_*`: bị chặn. `infra_create/update/move/link/unlink`, Planka ghi, `chatops_reply_conversation`, Grafana create/update, storage upload: luôn hỏi.
 - Hook `prod-guard.ps1`: chặn mọi lệnh restart có dấu hiệu PROD, kể cả khi đã được cho phép.
 
 ## Biến môi trường cần có
